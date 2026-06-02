@@ -1,0 +1,168 @@
+{% extends "portfolio/base.html" %}
+{% load portfolio_format %}
+{% block title %}Tenants{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Tenants</h1>
+    <p>Quick contact lookup for contract tenants, other occupants, and former tenant records.</p>
+  </div>
+  <a class="button" href="{% url 'tenant_create' %}">Add Person</a>
+</div>
+
+<section class="panel">
+  <form method="get" class="tenant-filter-form">
+    <p>
+      <label for="tenant-search">Search</label>
+      <input id="tenant-search" type="search" name="q" value="{{ search }}" placeholder="Name, email, phone, property, unit, financial support office">
+    </p>
+    <p>
+      <label for="tenant-role">Role</label>
+      <select id="tenant-role" name="role">
+        {% for value, label in role_options %}
+          <option value="{{ value }}" {% if value == role_filter %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </p>
+    <p>
+      <label for="tenant-status">Status</label>
+      <select id="tenant-status" name="status">
+        {% for value, label in status_options %}
+          <option value="{{ value }}" {% if value == status_filter %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </p>
+    <p>
+      <label for="tenant-property">Property</label>
+      <select id="tenant-property" name="property">
+        <option value="">All properties</option>
+        {% for property in properties %}
+          <option value="{{ property.pk }}" {% if property.pk|stringformat:"s" == property_filter %}selected{% endif %}>{{ property.name }}</option>
+        {% endfor %}
+      </select>
+    </p>
+    <div class="tenant-filter-actions">
+      <a class="button secondary" href="{% url 'tenant_list' %}">Reset</a>
+    </div>
+  </form>
+</section>
+
+<section class="panel">
+  <div class="section-head">
+    <div>
+      <h2>People</h2>
+      <p class="muted">{{ rows|length }} contact{{ rows|length|pluralize }} shown.</p>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table class="tenant-table">
+      <thead>
+        <tr>
+          <th></th>
+          <th><a href="{{ sort_urls.name }}">Name</a></th>
+          <th><a href="{{ sort_urls.property }}">Property</a></th>
+          <th><a href="{{ sort_urls.unit }}">Unit</a></th>
+          <th><a href="{{ sort_urls.cold_rent }}">Cold Rent</a></th>
+          <th><a href="{{ sort_urls.total_rent }}">Total Rent</a></th>
+          <th><a href="{{ sort_urls.email }}">Email</a></th>
+          <th><a href="{{ sort_urls.phone }}">Phone</a></th>
+          <th>Financial Support Office</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            <td><button type="button" class="tenant-row-toggle" aria-label="Expand tenant details" aria-expanded="false" aria-controls="tenant-details-{{ forloop.counter }}"></button></td>
+            <td><strong>{{ row.name }}</strong></td>
+            <td>{{ row.property_name }}</td>
+            <td>{{ row.unit_label }}</td>
+            <td>{{ row.cold_rent|eur }}</td>
+            <td>{{ row.total_rent|eur }}</td>
+            <td>{% if row.tenant.email %}<a href="mailto:{{ row.tenant.email }}">{{ row.tenant.email }}</a>{% else %}-{% endif %}</td>
+            <td>{% if row.tenant.phone %}<a href="tel:{{ row.tenant.phone }}">{{ row.tenant.phone }}</a>{% else %}-{% endif %}</td>
+            <td>
+              {% if row.tenant.support_office_name or row.tenant.support_office_email or row.tenant.support_office_phone %}
+                {% if row.tenant.support_office_name %}{{ row.tenant.support_office_name }}{% endif %}
+                {% if row.tenant.support_office_email %}<br><a href="mailto:{{ row.tenant.support_office_email }}">{{ row.tenant.support_office_email }}</a>{% endif %}
+                {% if row.tenant.support_office_phone %}<br><a href="tel:{{ row.tenant.support_office_phone }}">{{ row.tenant.support_office_phone }}</a>{% endif %}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+          </tr>
+          <tr id="tenant-details-{{ forloop.counter }}" class="tenant-detail-row" hidden>
+            <td colspan="9">
+              <div class="tenant-detail-grid">
+                <section>
+                  <h3>Person</h3>
+                  <dl class="detail-list">
+                    <dt>Status</dt><dd><span class="status-pill {% if row.status == 'Current' %}success{% endif %}">{{ row.status }}</span></dd>
+                    <dt>Role</dt><dd>{{ row.role_label }}</dd>
+                    <dt>Financial support office</dt>
+                    <dd>
+                      {% if row.tenant.support_office_name or row.tenant.support_office_email or row.tenant.support_office_phone %}
+                        {% if row.tenant.support_office_name %}{{ row.tenant.support_office_name }}{% endif %}
+                        {% if row.tenant.support_office_email %}<br><a href="mailto:{{ row.tenant.support_office_email }}">{{ row.tenant.support_office_email }}</a>{% endif %}
+                        {% if row.tenant.support_office_phone %}<br><a href="tel:{{ row.tenant.support_office_phone }}">{{ row.tenant.support_office_phone }}</a>{% endif %}
+                      {% else %}
+                        -
+                      {% endif %}
+                    </dd>
+                    <dt>Birthday</dt><dd>{% if row.tenant.birthday %}{{ row.tenant.birthday|date:"d.m.Y" }}{% else %}-{% endif %}</dd>
+                    <dt>Relationship notes</dt><dd>{{ row.tenant.relationship_notes|default:"-"|linebreaksbr }}</dd>
+                    <dt>Person notes</dt><dd>{{ row.tenant.notes|default:"-"|linebreaksbr }}</dd>
+                  </dl>
+                  <div class="actions">
+                    <a class="button secondary" href="{% url 'tenant_update' row.tenant.pk %}?next={{ current_path|urlencode }}">Edit person</a>
+                  </div>
+                </section>
+                <section>
+                  <h3>Units and Roles</h3>
+                  <div class="table-wrap">
+                    <table>
+                      <thead><tr><th>Property</th><th>Unit</th><th>Role</th><th>Move in/out</th><th></th></tr></thead>
+                      <tbody>
+                        {% for association in row.associations %}
+                          <tr>
+                            <td>{{ association.property_name }}</td>
+                            <td>{{ association.unit_label }}</td>
+                            <td>{{ association.role_label }}</td>
+                            <td>{{ association.move_in_date|date:"d.m.Y" }}{% if association.move_out_date %} - {{ association.move_out_date|date:"d.m.Y" }}{% else %} - open{% endif %}</td>
+                            <td><a href="{% url 'unit_detail' association.unit.pk %}">Open unit</a></td>
+                          </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="9">No people match the current filters.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<script>
+  const tenantFilterForm = document.querySelector(".tenant-filter-form");
+  let tenantSearchTimer;
+  tenantFilterForm?.querySelectorAll("select").forEach((select) => {
+    select.addEventListener("change", () => tenantFilterForm.submit());
+  });
+  tenantFilterForm?.querySelector("input[type='search']")?.addEventListener("input", () => {
+    clearTimeout(tenantSearchTimer);
+    tenantSearchTimer = setTimeout(() => tenantFilterForm.submit(), 450);
+  });
+  document.querySelectorAll(".tenant-row-toggle").forEach((button) => {
+    button.addEventListener("click", () => {
+      const detail = document.getElementById(button.getAttribute("aria-controls"));
+      const isOpen = button.getAttribute("aria-expanded") === "true";
+      button.setAttribute("aria-expanded", String(!isOpen));
+      if (detail) detail.hidden = isOpen;
+    });
+  });
+</script>
+{% endblock %}

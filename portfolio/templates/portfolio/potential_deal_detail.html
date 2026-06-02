@@ -1,0 +1,252 @@
+{% extends "portfolio/base.html" %}
+{% load portfolio_format %}
+{% block title %}{{ deal.name }}{% endblock %}
+{% block content %}
+<div class="potential-deal-page" data-period="annual">
+  <div class="page-head">
+    <div>
+      <h1>{{ deal.name }}</h1>
+      <p>{{ deal.address|default:"Real-estate purchase idea" }}</p>
+    </div>
+    <div class="actions">
+      <form method="get" class="inline-form" id="deal-comparison-form">
+        <select name="year" aria-label="Comparison year">
+          {% for year in years %}
+            <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
+          {% endfor %}
+        </select>
+        {% if selected_scenario %}<input type="hidden" name="scenario" value="{{ selected_scenario.pk }}">{% endif %}
+      </form>
+      <a class="button secondary" href="{% url 'potential_deal_update' deal.pk %}">Edit Deal</a>
+      <a class="button secondary" href="{% url 'potential_deal_optimizer' deal.pk %}{% if selected_scenario %}?scenario={{ selected_scenario.pk }}{% endif %}">Optimize Scenario</a>
+      <a class="button" href="{% url 'potential_scenario_create' deal.pk %}">Add Scenario</a>
+    </div>
+  </div>
+
+  <section class="panel decision-dashboard">
+    <div class="section-head">
+      <div>
+        <h2>Decision Dashboard</h2>
+        <p class="muted">Ownership-share impact for {{ selected_year }} with the selected financing scenario.</p>
+      </div>
+      <span class="value-scope-badge share" tabindex="0" data-tooltip="Amounts are multiplied by the relevant ownership share.">Showing your share</span>
+      <div class="decision-controls">
+        {% if deal.scenarios.all %}
+          <form method="get" class="selected-scenario-control" id="scenario-switch-form">
+            <input type="hidden" name="year" value="{{ selected_year }}">
+            <label for="selected-scenario">Selected scenario</label>
+            <select id="selected-scenario" name="scenario" aria-label="Selected financing scenario">
+              {% for scenario in deal.scenarios.all %}
+                <option value="{{ scenario.pk }}" {% if selected_scenario and scenario.pk == selected_scenario.pk %}selected{% endif %}>{{ scenario.name }}</option>
+              {% endfor %}
+            </select>
+          </form>
+        {% endif %}
+        <div class="segmented-control period-toggle" aria-label="Display period">
+          <button type="button" data-period-toggle="monthly">Monthly</button>
+          <button type="button" class="is-active" data-period-toggle="annual">Annual</button>
+        </div>
+      </div>
+    </div>
+
+    {% if selected_scenario %}
+      <div class="impact-bar-grid">
+        {% for bar in impact_bars %}
+          <div class="impact-bar" data-tooltip="{{ bar.tooltip }}" tabindex="0">
+            <div class="impact-bar-head">
+              <strong>{{ bar.label }}</strong>
+              {% if bar.percent %}
+                <span class="impact-delta {{ bar.delta_class }}">{{ bar.delta|signed_pct }}</span>
+              {% elif bar.periodic %}
+                <span class="impact-delta {{ bar.delta_class }}"><span class="period-value period-monthly">{{ bar.delta_monthly|signed_eur }}</span><span class="period-value period-annual">{{ bar.delta|signed_eur }}</span></span>
+              {% else %}
+                <span class="impact-delta {{ bar.delta_class }}">{{ bar.delta|signed_eur }}</span>
+              {% endif %}
+            </div>
+            <div class="impact-stack-track">
+              <div class="impact-stack-segment delta-neutral" style="width: {{ bar.base_width }}%;"></div>
+              <div class="impact-stack-segment {{ bar.delta_class }}" style="width: {{ bar.change_width }}%;"></div>
+            </div>
+            <div class="impact-bar-values">
+              {% if bar.percent %}
+                <span>{{ bar.current|pct }} → {{ bar.after|pct }}</span>
+              {% elif bar.periodic %}
+                <span class="period-value period-monthly">{{ bar.current_monthly|eur }} → {{ bar.after_monthly|eur }}</span>
+                <span class="period-value period-annual">{{ bar.current|eur }} → {{ bar.after|eur }}</span>
+              {% else %}
+                <span>{{ bar.current|eur }} → {{ bar.after|eur }}</span>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p>Add a financing scenario to see the decision dashboard.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel scenario-comparison">
+    <div class="section-head">
+      <div>
+        <h2>Scenario Comparison</h2>
+        <p class="muted">Highest annual_owner_roi scenario is highlighted. Cashflow uses cold rent and excludes principal repayment because principal becomes Equity Build.</p>
+      </div>
+      <span class="value-scope-badge share" tabindex="0" data-tooltip="Amounts are multiplied by the relevant ownership share.">Showing your share</span>
+    </div>
+
+    {% if scenario_cards %}
+      <div class="scenario-card-grid">
+        {% for item in scenario_cards %}
+          <article class="scenario-card-shell">
+            <a class="scenario-card {% if item.selected %}is-selected{% endif %} {% if item.row.is_highest_annual_owner_roi %}is-highest-annual-owner-roi{% endif %}" href="{% url 'potential_deal_detail' deal.pk %}?year={{ selected_year }}&scenario={{ item.row.scenario.pk }}">
+              <div class="scenario-card-head">
+                <div>
+                  <h3>{{ item.row.scenario.name }}</h3>
+                  <p>{% if item.selected %}Selected scenario{% elif item.row.scenario.is_default %}Default scenario{% else %}Financing scenario{% endif %} ({{ item.row.scenario.interest_rate|pct }} interest)</p>
+                </div>
+              </div>
+              {% if item.selected %}<div class="selected-scenario-badge"><span class="status-pill">Selected</span></div>{% endif %}
+              <div class="scenario-bars">
+                <div class="scenario-bar">
+                  <div class="scenario-bar-head"><span>Cashflow</span><strong class="scenario-bar-value"><span class="period-value period-monthly">{{ item.row.metrics.monthly_cashflow|eur }}</span><span class="period-value period-annual">{{ item.row.metrics.cashflow|eur }}</span></strong></div>
+                  <div class="impact-track"><div class="impact-fill {{ item.cashflow_class }}" style="width: {{ item.cashflow_width }}%;"></div></div>
+                </div>
+                <div class="scenario-bar">
+                  <div class="scenario-bar-head"><span>Annual Owner ROI</span><strong class="scenario-bar-value">{{ item.row.metrics.annual_owner_roi|pct }}</strong></div>
+                  <div class="impact-track"><div class="impact-fill delta-positive" style="width: {{ item.roi_width }}%;"></div></div>
+                </div>
+                <div class="scenario-bar">
+                  <div class="scenario-bar-head"><span>Debt</span><strong class="scenario-bar-value">{{ item.row.metrics.owner_debt|eur }}</strong></div>
+                  <div class="impact-track"><div class="impact-fill delta-negative" style="width: {{ item.debt_width }}%;"></div></div>
+                </div>
+                <div class="scenario-bar">
+                  <div class="scenario-bar-head"><span>Your Cash Invested</span><strong class="scenario-bar-value">{{ item.row.metrics.owner_cash_out|eur }}</strong></div>
+                  <div class="impact-track"><div class="impact-fill delta-negative" style="width: {{ item.cash_out_width }}%;"></div></div>
+                </div>
+              </div>
+              <div class="return-stack" data-tooltip="Return composition: Cash-on-Cash Return = Free Cashflow / Your Cash Invested; Equity Build return = estimated principal repayment / Your Cash Invested.">
+                <div class="return-stack-head">
+                  <span>ROI composition</span>
+                  <strong>{{ item.row.metrics.annual_owner_roi|pct }}</strong>
+                </div>
+                <div class="return-stack-track">
+                  <div class="return-stack-segment {{ item.cash_on_cash_return_class }}" style="width: {{ item.cash_on_cash_return_width }}%;"></div>
+                  <div class="return-stack-segment {{ item.principal_return_class }}" style="width: {{ item.principal_return_width }}%;"></div>
+                </div>
+                <small>Cash-on-Cash {{ item.row.metrics.cash_on_cash_return|pct }} · Equity Build {{ item.row.metrics.principal_repayment_return|pct }}</small>
+              </div>
+            </a>
+            <a class="scenario-edit-link" href="{% url 'potential_scenario_update' item.row.scenario.pk %}">Edit</a>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p>No financing scenarios yet. Add one to compare cashflow, ROI, debt, and cash invested.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <div class="section-head">
+      <div>
+        <h2>Deal Assumptions</h2>
+        <p class="muted">Decision KPIs above use your ownership share.</p>
+      </div>
+      <span class="value-scope-badge full" tabindex="0" data-tooltip="Amounts are total property values before ownership-share calculation.">Showing full property values</span>
+      <span class="status-pill">{{ deal.get_status_display }}</span>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi"><span tabindex="0" data-tooltip="Purchase Price = full-property asking or expected buying price.">Purchase Price</span><strong>{{ deal.purchase_price|eur }}</strong></div>
+      <div class="kpi"><span tabindex="0" data-tooltip="Ownership Share = your ownership percentage used to calculate your rent, costs, debt, and value.">Ownership Share</span><strong>{{ deal.ownership_share|pct }}</strong></div>
+      <div class="kpi"><span tabindex="0" data-tooltip="Annual Cold Rent = expected monthly cold rent × 12. This is full-property rent.">Annual Cold Rent</span><strong>{{ comparison.metrics.annual_cold_rent|eur }}</strong></div>
+      <div class="kpi"><span tabindex="0" data-tooltip="Annual Total Rent = expected monthly cold rent plus utilities/prepayments × 12. This is full-property rent.">Annual Total Rent</span><strong>{{ comparison.metrics.annual_total_rent|eur }}</strong></div>
+      <div class="kpi"><span tabindex="0" data-tooltip="Buying Costs = full-property buying costs such as notary, taxes, broker, or closing costs. These are saved as deal assumptions for optimizer work.">Buying Costs</span><strong>{{ deal.buying_costs|eur }}</strong></div>
+      <div class="kpi"><span tabindex="0" data-tooltip="Minimum DSCR = optional target debt-service coverage ratio for this deal. It is informational in v1.">Minimum DSCR</span><strong>{% if deal.minimum_dscr %}{{ deal.minimum_dscr|floatformat:2 }}{% else %}-{% endif %}</strong></div>
+      <div class="kpi"><span tabindex="0" data-tooltip="Maximum LTV = optional maximum loan-to-value target for this deal. It is informational in v1.">Maximum LTV</span><strong>{% if deal.maximum_ltv %}{{ deal.maximum_ltv|pct }}{% else %}-{% endif %}</strong></div>
+    </div>
+    {% if deal.notes %}<p class="notes-text">{{ deal.notes }}</p>{% endif %}
+  </section>
+
+  <details class="detail-panel">
+    <summary>Scenario Details</summary>
+    {% if deal.scenarios.all %}
+      <section class="panel">
+        <div class="section-head">
+          <h2>Scenario Details</h2>
+          <span class="value-scope-badge full" tabindex="0" data-tooltip="Amounts are total property values before ownership-share calculation.">Showing full property values</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Scenario</th>
+                <th tabindex="0" data-tooltip="Your Cash Invested = your real cash paid in this financing scenario. Bank-financed amounts are excluded.">Your Cash Invested</th>
+                <th tabindex="0" data-tooltip="Full-property loan amount for this financing option.">Loan Amount</th>
+                <th tabindex="0" data-tooltip="Annual interest rate entered as a percentage in the form, e.g. 2 for 2%.">Interest Rate</th>
+                <th tabindex="0" data-tooltip="Full-property monthly payment. Debt service uses monthly payment × 12 × ownership share.">Monthly Payment</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for scenario in deal.scenarios.all %}
+                <tr {% if selected_scenario and scenario.pk == selected_scenario.pk %}class="highlight-row"{% endif %}>
+                  <td>{{ scenario.name }}{% if scenario.is_default %} <span class="status-pill">Default</span>{% endif %}</td>
+                  <td>{{ scenario.owner_cash_out|eur }}</td>
+                  <td>{{ scenario.loan_amount|eur }}</td>
+                  <td>{{ scenario.interest_rate|pct }}</td>
+                  <td>{{ scenario.monthly_payment|eur }}</td>
+                  <td><a href="{% url 'potential_scenario_update' scenario.pk %}">Edit</a></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    {% endif %}
+  </details>
+
+  <details class="detail-panel">
+    <summary>Formula Details</summary>
+    <section class="panel">
+      <div class="section-head">
+        <h2>Formula Details</h2>
+        <div class="scope-badge-row">
+          <span class="value-scope-badge share" tabindex="0" data-tooltip="Amounts are multiplied by the relevant ownership share.">Showing your share</span>
+          <span class="value-scope-badge full" tabindex="0" data-tooltip="Amounts are total property values before ownership-share calculation.">Showing full property values</span>
+        </div>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi"><span tabindex="0" data-tooltip="Cash In = expected annual cold rent × ownership share. Utility prepayments are excluded from cashflow. Deals assume manual rent adjustment is 0.">Cash In</span><strong>{{ comparison.metrics.annual_cash_in|eur }}</strong></div>
+        <div class="kpi"><span tabindex="0" data-tooltip="Annual Cash Out = non-recoverable operating costs × ownership share + interest cost. Principal repayment is excluded because it becomes equity by reducing debt.">Annual Cash Out</span><strong>{{ comparison.metrics.annual_cash_out|eur }}</strong></div>
+        <div class="kpi"><span tabindex="0" data-tooltip="Cashflow = Cash In - Annual Cash Out = cold rent - non-recoverable costs - interest. Principal repayment is excluded because it becomes equity.">Cashflow</span><strong>{{ comparison.metrics.cashflow|eur }}</strong></div>
+        <div class="kpi"><span tabindex="0" data-tooltip="Free Cashflow = Cashflow - principal repayment estimate. This is the real cash left after the full loan payment.">Free Cashflow</span><strong>{{ comparison.metrics.free_cashflow|eur }}</strong></div>
+        <div class="kpi"><span tabindex="0" data-tooltip="Your Cash Invested = your real cash paid in the selected financing scenario. Bank-financed amounts are excluded.">Your Cash Invested</span><strong>{{ comparison.metrics.owner_cash_out|eur }}</strong></div>
+        <div class="kpi"><span tabindex="0" data-tooltip="Equity Build = estimated principal repayment. Formula: max(debt service - interest cost, 0).">Equity Build</span><strong>{{ comparison.metrics.annual_equity_build|eur }}</strong></div>
+        <div class="kpi"><span tabindex="0" data-tooltip="Annual Owner ROI = Cashflow / Your Cash Invested. Annual ROI stays annual in monthly view.">Annual Owner ROI</span><strong>{{ comparison.metrics.annual_owner_roi|pct }}</strong></div>
+        <div class="kpi"><span tabindex="0" data-tooltip="Cash-on-Cash Return = Free Cashflow / Your Cash Invested. Free Cashflow subtracts the full debt service, including principal repayment.">Cash-on-Cash</span><strong>{{ comparison.metrics.cash_on_cash_return|pct }}</strong></div>
+        <div class="kpi"><span tabindex="0" data-tooltip="Years of Cold Rent to Purchase Price = full-property purchase price / full-property annual cold rent.">Years to Price</span><strong>{{ comparison.metrics.years_cold_rent_to_price|floatformat:1 }}</strong></div>
+        <div class="kpi"><span tabindex="0" data-tooltip="Gross Yield = owner-share annual cold rent / owner-share property value.">Gross Yield</span><strong>{{ comparison.metrics.gross_yield|pct }}</strong></div>
+        <div class="kpi"><span tabindex="0" data-tooltip="Net Yield = owner-share NOI / owner-share property value. In Deals, NOI = cold rent - non-recoverable costs. Utility prepayments are excluded.">Net Yield</span><strong>{{ comparison.metrics.net_yield|pct }}</strong></div>
+        <div class="kpi"><span tabindex="0" data-tooltip="LTV = owner-share debt / owner-share property value.">LTV</span><strong>{{ comparison.metrics.ltv|pct }}</strong></div>
+        <div class="kpi"><span tabindex="0" data-tooltip="DSCR = owner-share NOI / owner-share debt service.">DSCR</span><strong>{{ comparison.metrics.dscr|floatformat:2 }}</strong></div>
+      </div>
+    </section>
+  </details>
+</div>
+
+<script>
+  document.querySelector("#deal-comparison-form select")?.addEventListener("change", (event) => {
+    event.target.form.submit();
+  });
+  document.querySelector("#scenario-switch-form select")?.addEventListener("change", (event) => {
+    event.target.form.submit();
+  });
+  const dealPage = document.querySelector(".potential-deal-page");
+  document.querySelectorAll("[data-period-toggle]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const period = button.dataset.periodToggle;
+      dealPage.dataset.period = period;
+      document.querySelectorAll("[data-period-toggle]").forEach((item) => item.classList.toggle("is-active", item === button));
+    });
+  });
+</script>
+{% endblock %}

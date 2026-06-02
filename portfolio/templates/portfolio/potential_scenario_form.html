@@ -1,0 +1,48 @@
+{% extends "portfolio/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<section class="form-panel">
+  <h1>{{ title }}</h1>
+  <p class="muted">{{ deal.name }}</p>
+  <div class="scope-badge-row">
+    <span class="value-scope-badge share" tabindex="0" data-tooltip="Amounts are multiplied by the relevant ownership share.">Showing your share</span>
+    <span class="value-scope-badge full" tabindex="0" data-tooltip="Amounts are total property values before ownership-share calculation.">Showing full property values</span>
+  </div>
+  <form method="post" class="form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% if form.errors %}
+      <div class="error-summary">
+        <strong>Save failed.</strong>
+        {{ form.errors }}
+      </div>
+    {% endif %}
+    <div class="form-grid">
+      <p>{{ form.name.label_tag }}{{ form.name }}{{ form.name.errors }}</p>
+      <p>{{ form.owner_cash_out.label_tag }}{{ form.owner_cash_out }}<span class="helptext">{{ form.owner_cash_out.help_text }}</span>{{ form.owner_cash_out.errors }}</p>
+      <p>{{ form.loan_amount.label_tag }}{{ form.loan_amount }}<span class="helptext">{{ form.loan_amount.help_text }}</span>{{ form.loan_amount.errors }}</p>
+      <p>{{ form.interest_rate.label_tag }}{{ form.interest_rate }}<span class="helptext">{{ form.interest_rate.help_text }}</span>{{ form.interest_rate.errors }}</p>
+      <p>{{ form.monthly_payment.label_tag }}{{ form.monthly_payment }}<span class="helptext">{{ form.monthly_payment.help_text }}</span>{{ form.monthly_payment.errors }}</p>
+      <p>{{ form.maturity_notes.label_tag }}{{ form.maturity_notes }}{{ form.maturity_notes.errors }}</p>
+      <label class="checkbox-field">
+        {{ form.is_default }}
+        <span>{{ form.is_default.label }}</span>
+      </label>
+      <p class="full-span">{{ form.notes.label_tag }}{{ form.notes }}{{ form.notes.errors }}</p>
+    </div>
+    <div class="actions">
+      <button type="submit">Save</button>
+      <a class="button secondary" href="{% url 'potential_deal_detail' deal.pk %}">Cancel</a>
+    </div>
+  </form>
+  {% if scenario %}
+    <div class="form-danger-zone">
+      <div>
+        <strong>Delete this scenario</strong>
+        <p class="muted">Remove this financing scenario from {{ deal.name }}. The deal and other scenarios stay unchanged.</p>
+      </div>
+      <a class="button danger-button" href="{% url 'potential_scenario_delete' scenario.pk %}">Delete Scenario</a>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

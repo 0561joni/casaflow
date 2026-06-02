@@ -1,0 +1,19 @@
+{% extends "portfolio/base.html" %}
+{% block title %}Edit{% endblock %}
+{% block content %}
+<section class="form-panel">
+  <h1>{% if title %}{{ title }}{% elif view.object %}{{ view.object }}{% else %}New Record{% endif %}</h1>
+  <form method="post" class="form">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <div class="actions">
+      <button type="submit">Save</button>
+      {% if cancel_url %}
+        <a class="button secondary" href="{{ cancel_url }}">Cancel</a>
+      {% else %}
+        <a class="button secondary" href="javascript:history.back()">Cancel</a>
+      {% endif %}
+    </div>
+  </form>
+</section>
+{% endblock %}

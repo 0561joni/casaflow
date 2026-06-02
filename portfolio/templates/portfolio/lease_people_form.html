@@ -1,0 +1,100 @@
+{% extends "portfolio/base.html" %}
+{% block title %}Edit People{% endblock %}
+{% block content %}
+<section class="form-panel wide-form-panel">
+  <h1>Edit People</h1>
+  <p>{{ unit.label }} · {{ property.name }}. Store contract tenants and other occupants for this lease.</p>
+  <form method="post" class="form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% if form.errors %}
+      <div class="error-summary"><strong>Save failed.</strong>{{ form.errors }}</div>
+    {% endif %}
+
+    <section class="calc-summary">
+      <div class="section-head">
+        <h2>People on this lease</h2>
+        <span class="muted">At least one contract tenant is required.</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Move-in</th>
+              <th>Move-out</th>
+              <th>Contact</th>
+              <th>Birthday</th>
+              <th>Notes</th>
+              <th>Remove</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in form.rows %}
+              <tr>
+                <td>
+                  {{ row.first_name }}{{ row.first_name.errors }}
+                  {{ row.last_name }}{{ row.last_name.errors }}
+                </td>
+                <td>{{ row.role }}{{ row.role.errors }}</td>
+                <td>{{ row.move_in_date }}{{ row.move_in_date.errors }}</td>
+                <td>{{ row.move_out_date }}{{ row.move_out_date.errors }}</td>
+                <td>
+                  {{ row.email }}{{ row.email.errors }}
+                  {{ row.phone }}{{ row.phone.errors }}
+                </td>
+                <td>{{ row.birthday }}{{ row.birthday.errors }}</td>
+                <td>
+                  {{ row.relationship_notes }}{{ row.relationship_notes.errors }}
+                  {{ row.notes }}{{ row.notes.errors }}
+                </td>
+                <td>{{ row.remove }}{{ row.remove.errors }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="8">No people stored for this lease yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="calc-summary">
+      <h2>Add Person</h2>
+      <div class="form-grid">
+        <p>{{ form.add_person_mode.label_tag }}{{ form.add_person_mode }}{{ form.add_person_mode.errors }}</p>
+        <p data-person-mode-field="existing">{{ form.existing_person.label_tag }}{{ form.existing_person }}{{ form.existing_person.errors }}</p>
+        <p data-person-mode-field="new">{{ form.first_name.label_tag }}{{ form.first_name }}{{ form.first_name.errors }}</p>
+        <p data-person-mode-field="new">{{ form.last_name.label_tag }}{{ form.last_name }}{{ form.last_name.errors }}</p>
+        <p data-person-mode-field="new">{{ form.email.label_tag }}{{ form.email }}{{ form.email.errors }}</p>
+        <p data-person-mode-field="new">{{ form.phone.label_tag }}{{ form.phone }}{{ form.phone.errors }}</p>
+        <p data-person-mode-field="new">{{ form.birthday.label_tag }}{{ form.birthday }}{{ form.birthday.errors }}</p>
+        <p data-person-mode-field="existing new">{{ form.new_role.label_tag }}{{ form.new_role }}{{ form.new_role.errors }}</p>
+        <p data-person-mode-field="existing new">{{ form.new_move_in_date.label_tag }}{{ form.new_move_in_date }}{{ form.new_move_in_date.errors }}</p>
+        <p data-person-mode-field="existing new">{{ form.new_move_out_date.label_tag }}{{ form.new_move_out_date }}{{ form.new_move_out_date.errors }}</p>
+        <p class="full-span" data-person-mode-field="new">{{ form.relationship_notes.label_tag }}{{ form.relationship_notes }}{{ form.relationship_notes.errors }}</p>
+        <p class="full-span" data-person-mode-field="existing new">{{ form.new_notes.label_tag }}{{ form.new_notes }}{{ form.new_notes.errors }}</p>
+      </div>
+    </section>
+
+    <div class="actions"><button type="submit">Save</button><a class="button secondary" href="{{ cancel_url }}">Cancel</a></div>
+  </form>
+</section>
+<script>
+  (() => {
+    const mode = document.querySelector("#id_add_person_mode");
+    const fields = Array.from(document.querySelectorAll("[data-person-mode-field]"));
+    function updateFields() {
+      const value = mode ? mode.value : "none";
+      fields.forEach((field) => {
+        const modes = field.dataset.personModeField.split(" ");
+        field.hidden = !modes.includes(value);
+      });
+    }
+    if (mode) {
+      mode.addEventListener("change", updateFields);
+      updateFields();
+    }
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,98 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}CasaFlow{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'portfolio/css/app.css' %}?v=20260601-mobile-polish2">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="{% url 'dashboard' %}" aria-label="CasaFlow dashboard">
+      <img src="{% static 'portfolio/img/casaflow-logo-header.png' %}" alt="CasaFlow">
+    </a>
+    {% if user.is_authenticated %}
+      <nav>
+        <a href="{% url 'dashboard' %}"><svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M3 13h8V3H3v10Zm10 8h8V3h-8v18ZM3 21h8v-6H3v6Z"/></svg><span>Dashboard</span></a>
+        <a href="{% url 'property_list' %}"><svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 21V7l8-4 8 4v14h-6v-7h-4v7H4Zm3-3h2v-2H7v2Zm0-4h2v-2H7v2Zm0-4h2V8H7v2Zm4 0h2V8h-2v2Zm4 0h2V8h-2v2Zm0 4h2v-2h-2v2Z"/></svg><span>Properties</span></a>
+        <a href="{% url 'tenant_list' %}"><svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M9 12a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm0 2c-3.3 0-6 1.7-6 3.8V20h12v-2.2C15 15.7 12.3 14 9 14Zm7.5-1.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 1.5c-.9 0-1.8.2-2.5.5 1.8.9 3 2.1 3 3.3V20h4v-2c0-2.2-2-4-4.5-4Z"/></svg><span>Tenants</span></a>
+        <a href="{% url 'loan_list' %}"><svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6V2Zm8 2v5h4l-4-5ZM9 7h3V5H9v2Zm0 4h8V9h-8v2Zm0 8 7-7 1.4 1.4-7 7L9 19Zm1.2-4.8a1.4 1.4 0 1 0 0-2.8 1.4 1.4 0 0 0 0 2.8Zm6 6a1.4 1.4 0 1 0 0-2.8 1.4 1.4 0 0 0 0 2.8Z"/></svg><span>Loans</span></a>
+        <a href="{% url 'potential_deal_list' %}"><svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 21V9l8-6 8 6v12h-5v-7H9v7H4Zm2-2h1v-7h10v7h1V10l-6-4.5L6 10v9Zm3-9h2V8H9v2Zm4 0h2V8h-2v2Z"/></svg><span>Deals</span></a>
+        <details class="nav-more">
+          <summary><svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm7 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm7 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"/></svg><span>More</span></summary>
+          <div class="nav-more-menu">
+            <a href="{% url 'exports' %}"><svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v10l4-4 1.4 1.4L12 15.8l-5.4-5.4L8 9l4 4V3h0ZM5 19h14v-4h2v6H3v-6h2v4Z"/></svg><span>Exports</span></a>
+            <a href="{% url 'import_workbook' %}"><svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 21V11l-4 4-1.4-1.4L12 8.2l5.4 5.4L16 15l-4-4v10h0ZM5 5h14v4h2V3H3v6h2V5Z"/></svg><span>Import</span></a>
+            <a href="{% url 'reference' %}"><svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 3h11a3 3 0 0 1 3 3v15H7a3 3 0 0 1-3-3V4a1 1 0 0 1 1-1Zm2 14h10V6a1 1 0 0 0-1-1H6v12.2c.3-.1.6-.2 1-.2Zm0 2a1 1 0 0 0 0 2h10v-2H7Zm2-11h6v2H9V8Zm0 4h6v2H9v-2Z"/></svg><span>Reference</span></a>
+            <a href="{% url 'backup' %}"><svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 1 8.5 6h-2.2A7 7 0 1 0 19 12h-3l4-4 4 4h-3a9 9 0 1 1-9-9Zm1 5v4.6l3.2 1.9-1 1.7-4.2-2.5V8h2Z"/></svg><span>Backup</span></a>
+            <a href="{% url 'settings' %}"><svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M19.4 13.5c.1-.5.1-1 .1-1.5s0-1-.1-1.5l2-1.5-2-3.5-2.4 1a7.7 7.7 0 0 0-2.6-1.5L14 2h-4l-.4 2.5A7.7 7.7 0 0 0 7 6L4.6 5l-2 3.5 2 1.5c-.1.5-.1 1-.1 1.5s0 1 .1 1.5l-2 1.5 2 3.5 2.4-1a7.7 7.7 0 0 0 2.6 1.5L10 22h4l.4-2.5A7.7 7.7 0 0 0 17 18l2.4 1 2-3.5-2-1.5ZM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"/></svg><span>Settings</span></a>
+            <form class="logout" method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit"><svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 3h8v2H7v14h6v2H5V3Zm11.6 5.4L20.2 12l-3.6 3.6-1.4-1.4L16.8 13H11v-2h5.8l-1.6-1.2 1.4-1.4Z"/></svg><span>Logout</span></button></form>
+          </div>
+        </details>
+      </nav>
+    {% endif %}
+  </header>
+  <main class="page">
+    {% if messages %}
+      <div class="message-stack" aria-live="polite">
+        {% for message in messages %}<div class="message {{ message.tags }}">{{ message }}</div>{% endfor %}
+      </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+  <script>
+    document.querySelectorAll(".message.success").forEach((message) => {
+      window.setTimeout(() => message.classList.add("is-hiding"), 4500);
+      window.setTimeout(() => message.remove(), 5200);
+    });
+
+    const tooltip = document.createElement("div");
+    tooltip.className = "app-tooltip";
+    tooltip.setAttribute("role", "tooltip");
+    document.body.appendChild(tooltip);
+
+    let activeTooltipTarget = null;
+    function showTooltipForTarget(target) {
+      if (!target || !target.dataset.tooltip) return;
+      activeTooltipTarget = target;
+      tooltip.textContent = target.dataset.tooltip;
+      tooltip.classList.add("is-visible");
+      positionTooltip(target);
+    }
+    function hideTooltip() {
+      activeTooltipTarget = null;
+      tooltip.classList.remove("is-visible");
+    }
+    function positionTooltip(target) {
+      const rect = target.getBoundingClientRect();
+      const tooltipRect = tooltip.getBoundingClientRect();
+      const viewportPadding = 12;
+      let left = rect.left + rect.width / 2 - tooltipRect.width / 2;
+      left = Math.max(viewportPadding, Math.min(left, window.innerWidth - tooltipRect.width - viewportPadding));
+      const top = Math.max(viewportPadding, rect.top - tooltipRect.height - 10);
+      tooltip.style.left = `${left}px`;
+      tooltip.style.top = `${top}px`;
+    }
+    document.addEventListener("mouseover", (event) => showTooltipForTarget(event.target.closest("[data-tooltip]")));
+    document.addEventListener("focusin", (event) => showTooltipForTarget(event.target.closest("[data-tooltip]")));
+    document.addEventListener("click", (event) => {
+      const target = event.target.closest("[data-tooltip]");
+      if (target) {
+        showTooltipForTarget(target);
+        return;
+      }
+      hideTooltip();
+    });
+    document.addEventListener("mouseout", (event) => {
+      if (event.target.closest("[data-tooltip]")) hideTooltip();
+    });
+    document.addEventListener("focusout", (event) => {
+      if (event.target.closest("[data-tooltip]")) hideTooltip();
+    });
+    window.addEventListener("resize", () => {
+      if (activeTooltipTarget) positionTooltip(activeTooltipTarget);
+    });
+  </script>
+</body>
+</html>

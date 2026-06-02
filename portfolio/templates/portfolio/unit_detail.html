@@ -1,0 +1,266 @@
+{% extends "portfolio/base.html" %}
+{% load portfolio_format %}
+{% block title %}{{ unit.label }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ unit.label }}</h1>
+    <p><a href="{% url 'property_detail' property.pk %}">{{ property.name }}</a>{% if unit.floor %} · {{ unit.floor }}{% endif %}</p>
+  </div>
+  <div class="actions">
+    {% if edit_mode %}
+      <a class="button secondary" href="{% url 'unit_detail' unit.pk %}">Cancel</a>
+    {% else %}
+      <a class="button secondary" href="?edit=1">Edit</a>
+      <a class="button" href="{% url 'unit_change_tenant' unit.pk %}">Change Tenant</a>
+    {% endif %}
+  </div>
+</div>
+
+{% if edit_mode %}
+  <form method="post" class="form panel dossier-form">
+    {% csrf_token %}
+    {% if info_form.non_field_errors %}<div class="error-summary">{{ info_form.non_field_errors }}</div>{% endif %}
+    {% if people_form and people_form.non_field_errors %}<div class="error-summary">{{ people_form.non_field_errors }}</div>{% endif %}
+
+    <div class="section-head">
+      <h2>Unit Info</h2>
+    </div>
+    <div class="form-grid">
+      <p>{{ info_form.label.label_tag }}{{ info_form.label }}{{ info_form.label.errors }}</p>
+      <p>{{ info_form.floor.label_tag }}{{ info_form.floor }}{{ info_form.floor.errors }}</p>
+      <p>{{ info_form.area_sqm.label_tag }}{{ info_form.area_sqm }}{{ info_form.area_sqm.errors }}</p>
+      <p class="full-span">{{ info_form.unit_notes.label_tag }}{{ info_form.unit_notes }}{{ info_form.unit_notes.errors }}</p>
+    </div>
+
+    <div class="section-head form-section-head">
+      <h2>Technical Info</h2>
+    </div>
+    <div class="form-grid">
+      <p>{{ info_form.heating_type.label_tag }}{{ info_form.heating_type }}{{ info_form.heating_type.errors }}</p>
+      <p>{{ info_form.boiler_installation_info.label_tag }}{{ info_form.boiler_installation_info }}{{ info_form.boiler_installation_info.errors }}</p>
+      <p>{{ info_form.instant_water_heater_info.label_tag }}{{ info_form.instant_water_heater_info }}{{ info_form.instant_water_heater_info.errors }}</p>
+      <p class="full-span">{{ info_form.technical_notes.label_tag }}{{ info_form.technical_notes }}{{ info_form.technical_notes.errors }}</p>
+    </div>
+
+    <div class="section-head form-section-head">
+      <h2>Current Rent</h2>
+    </div>
+    <div class="form-grid">
+      <p>{{ info_form.rent_effective_start.label_tag }}{{ info_form.rent_effective_start }}{{ info_form.rent_effective_start.errors }}<span class="helptext">Use DD.MM.YYYY. If the date is newer than the current rent period, a new rent history record is created.</span></p>
+      <p>{{ info_form.cold_rent.label_tag }}{{ info_form.cold_rent }}{{ info_form.cold_rent.errors }}</p>
+      <p>{{ info_form.utility_prepayment.label_tag }}{{ info_form.utility_prepayment }}{{ info_form.utility_prepayment.errors }}</p>
+      <p>{{ info_form.total_rent.label_tag }}{{ info_form.total_rent }}{{ info_form.total_rent.errors }}</p>
+      <p class="full-span">{{ info_form.rent_notes.label_tag }}{{ info_form.rent_notes }}{{ info_form.rent_notes.errors }}</p>
+    </div>
+
+    {% if people_form %}
+      <div class="section-head form-section-head">
+        <h2>Current Tenant / People</h2>
+      </div>
+      <div class="people-edit-list">
+        {% for row in people_form.rows %}
+          <div class="people-edit-card">
+            <div class="form-grid">
+              <p>{{ row.first_name.label_tag }}{{ row.first_name }}{{ row.first_name.errors }}</p>
+              <p>{{ row.last_name.label_tag }}{{ row.last_name }}{{ row.last_name.errors }}</p>
+              <p>{{ row.email.label_tag }}{{ row.email }}{{ row.email.errors }}</p>
+              <p>{{ row.phone.label_tag }}{{ row.phone }}{{ row.phone.errors }}</p>
+              <p>{{ row.birthday.label_tag }}{{ row.birthday }}{{ row.birthday.errors }}</p>
+              <p>{{ row.role.label_tag }}{{ row.role }}{{ row.role.errors }}</p>
+              <p>{{ row.move_in_date.label_tag }}{{ row.move_in_date }}{{ row.move_in_date.errors }}</p>
+              <p>{{ row.move_out_date.label_tag }}{{ row.move_out_date }}{{ row.move_out_date.errors }}</p>
+              <p class="full-span">{{ row.relationship_notes.label_tag }}{{ row.relationship_notes }}{{ row.relationship_notes.errors }}</p>
+              <p class="full-span">{{ row.notes.label_tag }}{{ row.notes }}{{ row.notes.errors }}</p>
+              <p class="checkbox-field full-span">{{ row.remove }} {{ row.remove.label_tag }}</p>
+            </div>
+          </div>
+        {% empty %}
+          <p class="muted">No people stored for the current tenant period.</p>
+        {% endfor %}
+      </div>
+
+      <details class="advanced-fields">
+        <summary>Add another person</summary>
+        <div class="form-grid">
+          <p>{{ people_form.add_person_mode.label_tag }}{{ people_form.add_person_mode }}{{ people_form.add_person_mode.errors }}</p>
+          <p>{{ people_form.existing_person.label_tag }}{{ people_form.existing_person }}{{ people_form.existing_person.errors }}</p>
+          <p>{{ people_form.first_name.label_tag }}{{ people_form.first_name }}{{ people_form.first_name.errors }}</p>
+          <p>{{ people_form.last_name.label_tag }}{{ people_form.last_name }}{{ people_form.last_name.errors }}</p>
+          <p>{{ people_form.email.label_tag }}{{ people_form.email }}{{ people_form.email.errors }}</p>
+          <p>{{ people_form.phone.label_tag }}{{ people_form.phone }}{{ people_form.phone.errors }}</p>
+          <p>{{ people_form.birthday.label_tag }}{{ people_form.birthday }}{{ people_form.birthday.errors }}</p>
+          <p>{{ people_form.new_role.label_tag }}{{ people_form.new_role }}{{ people_form.new_role.errors }}</p>
+          <p>{{ people_form.new_move_in_date.label_tag }}{{ people_form.new_move_in_date }}{{ people_form.new_move_in_date.errors }}</p>
+          <p>{{ people_form.new_move_out_date.label_tag }}{{ people_form.new_move_out_date }}{{ people_form.new_move_out_date.errors }}</p>
+          <p class="full-span">{{ people_form.relationship_notes.label_tag }}{{ people_form.relationship_notes }}{{ people_form.relationship_notes.errors }}</p>
+          <p class="full-span">{{ people_form.new_notes.label_tag }}{{ people_form.new_notes }}{{ people_form.new_notes.errors }}</p>
+        </div>
+      </details>
+    {% endif %}
+
+    <div class="actions">
+      <button type="submit">Save</button>
+      <a class="button secondary" href="{% url 'unit_detail' unit.pk %}">Cancel</a>
+    </div>
+  </form>
+{% else %}
+  <section class="unit-overview-grid">
+    <section class="panel">
+      <div class="section-head"><h2>Unit Info</h2></div>
+      <dl class="dossier-list">
+        <dt>Living area</dt><dd>{% if unit.area_sqm %}{{ unit.area_sqm }} sqm{% else %}-{% endif %}</dd>
+        <dt>Floor</dt><dd>{{ unit.floor|default:"-" }}</dd>
+        <dt>Notes</dt><dd>{{ unit.notes|linebreaksbr|default:"-" }}</dd>
+      </dl>
+    </section>
+
+    <section class="panel">
+      <div class="section-head"><h2>Technical Info</h2></div>
+      <dl class="dossier-list">
+        <dt>Heating type</dt><dd>{{ unit.technical_info.heating_type|default:"-" }}</dd>
+        <dt>Boiler / Therme info</dt><dd>{{ unit.technical_info.boiler_installation_info|default:"-" }}</dd>
+        <dt>Instant water heater</dt><dd>{{ unit.technical_info.instant_water_heater_info|default:"-" }}</dd>
+        <dt>Notes</dt><dd>{{ unit.technical_info.notes|linebreaksbr|default:"-" }}</dd>
+      </dl>
+    </section>
+  </section>
+
+  <section class="panel">
+    <div class="section-head">
+      <div>
+        <h2>Current Tenant / People</h2>
+        <p class="muted">Only the active tenant period is shown here.</p>
+      </div>
+      <a class="button secondary" href="?edit=1">Edit Current Info</a>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi people-kpi">
+        <span>Contract Tenants</span>
+        <strong>
+          {% if active_summary.contract_people %}
+            {% for person in active_summary.contract_people %}{{ person.name }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+          {% else %}
+            Vacant
+          {% endif %}
+        </strong>
+      </div>
+      <div class="kpi people-kpi">
+        <span>Other Occupants</span>
+        <strong>
+          {% if active_summary.other_people %}
+            {% for person in active_summary.other_people %}{{ person.name }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+          {% else %}
+            -
+          {% endif %}
+        </strong>
+      </div>
+      <div class="kpi"><span>Cold Rent</span><strong>{{ overview.cold_rent|eur }}</strong></div>
+      <div class="kpi"><span>Utilities</span><strong>{{ overview.utility_prepayment|eur }}</strong></div>
+      <div class="kpi"><span>Total Rent</span><strong>{{ overview.total_rent|eur }}</strong></div>
+    </div>
+  </section>
+
+  <section class="panel mietbescheinigung-card">
+    <div class="section-head">
+      <div>
+        <h2>Mietbescheinigung</h2>
+        <p class="muted">Create a PDF certificate for the current tenant period.</p>
+      </div>
+      <div class="actions">
+        <a class="button secondary" href="{% url 'unit_mietbescheinigung' unit.pk %}?template=jobcenter">Jobcenter</a>
+        <a class="button secondary" href="{% url 'unit_mietbescheinigung' unit.pk %}?template=stadt_kassel">Stadt Kassel</a>
+      </div>
+    </div>
+    {% if not overview.active_lease %}
+      <p class="muted">Add an active tenant before creating a Mietbescheinigung.</p>
+    {% else %}
+      <p class="muted">The review form uses the active contract tenants, current rent, unit address, and saved landlord settings.</p>
+    {% endif %}
+  </section>
+{% endif %}
+
+<section class="panel" id="history">
+  <div class="section-head">
+    <div>
+      <h2>Tenant &amp; Rent History</h2>
+      <p class="muted">Use corrections only for old records. Current changes belong in the main edit mode above.</p>
+    </div>
+  </div>
+  <div class="lease-history">
+    {% for summary in lease_summaries %}
+      {% with lease=summary.lease %}
+        <article class="lease-card">
+          <div class="section-head lease-card-head">
+            <div>
+              <h3>Tenant period: {{ lease.start_date|date:"d.m.Y" }}{% if lease.end_date %} - {{ lease.end_date|date:"d.m.Y" }}{% else %} - open{% endif %}</h3>
+              {% if lease == overview.active_lease %}<span class="status-pill success">Active</span>{% else %}<span class="status-pill">Old</span>{% endif %}
+            </div>
+            <details class="action-menu">
+              <summary>Corrections</summary>
+              <div>
+                <a href="{% url 'lease_people_update' lease.pk %}">Edit people</a>
+              </div>
+            </details>
+          </div>
+          <div class="people-groups">
+            <div>
+              <span>Contract tenants</span>
+              {% if summary.contract_people %}
+                <ul class="plain-list">
+                  {% for person in summary.contract_people %}
+                    <li>{{ person.name }} <small>{{ person.role_label }}{% if person.move_in_date %} · from {{ person.move_in_date|date:"d.m.Y" }}{% endif %}{% if person.move_out_date %} to {{ person.move_out_date|date:"d.m.Y" }}{% endif %}</small></li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <p class="muted">No contract tenant stored.</p>
+              {% endif %}
+            </div>
+            <div>
+              <span>Other occupants</span>
+              {% if summary.other_people %}
+                <ul class="plain-list">
+                  {% for person in summary.other_people %}
+                    <li>{{ person.name }} <small>{{ person.role_label }}{% if person.move_in_date %} · from {{ person.move_in_date|date:"d.m.Y" }}{% endif %}{% if person.move_out_date %} to {{ person.move_out_date|date:"d.m.Y" }}{% endif %}</small></li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <p class="muted">No other occupants stored.</p>
+              {% endif %}
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Rent valid from</th><th>Valid until</th><th>Cold Rent</th><th>Utilities</th><th>Total Rent</th><th>Corrections</th></tr></thead>
+              <tbody>
+                {% for period in lease.rent_periods.all %}
+                  <tr>
+                    <td>{{ period.effective_start|date:"d.m.Y" }}</td>
+                    <td>{% if period.effective_end %}{{ period.effective_end|date:"d.m.Y" }}{% else %}Open{% endif %}</td>
+                    <td>{{ period.cold_rent|eur }}</td>
+                    <td>{{ period.utility_prepayment|eur }}</td>
+                    <td>{{ period.total_rent|eur }}</td>
+                    <td>
+                      <details class="action-menu table-action-menu">
+                        <summary>More</summary>
+                        <div>
+                          <a href="{% url 'rent_period_update' period.pk %}">Edit rent</a>
+                          <a href="{% url 'rent_period_delete' period.pk %}">Delete rent</a>
+                        </div>
+                      </details>
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr><td colspan="6">No rent records yet.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </article>
+      {% endwith %}
+    {% empty %}
+      <p class="muted">No tenant history yet.</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

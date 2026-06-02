@@ -1,0 +1,19 @@
+services:
+  realestate-finance:
+    build: .
+    container_name: realestate-finance
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DJANGO_SECRET_KEY: "change-me-before-deploying"
+      DJANGO_DEBUG: "0"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,your-domain.example"
+      DJANGO_CSRF_TRUSTED_ORIGINS: "https://your-domain.example"
+      APP_DB_PATH: "/data/app.db"
+      APP_BACKUP_DIR: "/data/backups"
+      APP_MEDIA_ROOT: "/data/media"
+      SECURE_SSL_REDIRECT: "0"
+    volumes:
+      - ./data:/data
+      - ./Master-Immos.xlsx:/imports/Master-Immos.xlsx:ro

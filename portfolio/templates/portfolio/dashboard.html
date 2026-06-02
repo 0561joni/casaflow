@@ -1,0 +1,366 @@
+{% extends "portfolio/base.html" %}
+{% load portfolio_format static %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Dashboard</h1>
+    <p>Portfolio overview for {{ selected_year }}. Use Properties for day-to-day work.</p>
+    <div class="scope-badge-row">
+      <span class="value-scope-badge share" tabindex="0" data-tooltip="Amounts are multiplied by the relevant ownership share.">Showing your share</span>
+      {% if tax_calculations_enabled %}
+        <span class="value-scope-badge tax" tabindex="0" data-tooltip="{% if tax_mode == 'after' %}Portfolio Cashflow, Free Cashflow, and Annual Owner ROI include estimated portfolio tax using the effective tax rate and yearly deductions from Settings.{% else %}Portfolio Cashflow, Free Cashflow, and Annual Owner ROI exclude estimated tax.{% endif %}">{{ tax_badge_label }}</span>
+      {% endif %}
+    </div>
+  </div>
+  <form method="get" class="inline-form dashboard-filter-form" id="dashboard-filter-form">
+    {% if tax_calculations_enabled %}
+      <div class="segmented-control tax-mode-control" aria-label="Dashboard tax mode">
+        <label class="{% if tax_mode == 'before' %}is-active{% endif %}">
+          <input type="radio" name="tax" value="before" {% if tax_mode == 'before' %}checked{% endif %}>
+          Before Tax
+        </label>
+        <label class="{% if tax_mode == 'after' %}is-active{% endif %}">
+          <input type="radio" name="tax" value="after" {% if tax_mode == 'after' %}checked{% endif %}>
+          After Tax
+        </label>
+      </div>
+    {% endif %}
+    <select name="year" aria-label="Dashboard year">
+      {% for year in years %}
+        <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
+      {% endfor %}
+    </select>
+    <details class="property-filter">
+      <summary>{{ property_filter_label }}</summary>
+      <div class="property-filter-menu">
+        <a class="property-filter-reset" href="{% url 'dashboard' %}?year={{ selected_year }}{% if tax_calculations_enabled %}&tax={{ tax_mode }}{% endif %}">All properties</a>
+        {% for property in all_properties %}
+          <label>
+            <input type="checkbox" name="properties" value="{{ property.pk }}" {% if property.pk in selected_property_set %}checked{% endif %}>
+            <span>{{ property.name }}</span>
+          </label>
+        {% empty %}
+          <p class="muted">No properties yet.</p>
+        {% endfor %}
+      </div>
+    </details>
+  </form>
+</div>
+
+<section class="kpi-bucket primary-kpi-bucket">
+  <div class="kpi-bucket-grid primary-kpis">
+    <div class="kpi"><span tabindex="0" data-tooltip="{% if tax_calculations_enabled and tax_mode == 'after' %}Cashflow = portfolio cashflow before tax - estimated portfolio tax. Principal repayment is excluded because it becomes equity by reducing debt.{% else %}Cashflow = cold rent × ownership share - operating costs - vacancy/loss - interest costs. Principal repayment is excluded because it becomes equity by reducing debt.{% endif %}">Cashflow</span><strong>{{ portfolio.total_cashflow|eur0 }}</strong></div>
+    <div class="kpi"><span tabindex="0" data-tooltip="Annual Owner ROI = selected portfolio Cashflow / Your Cash Invested. Unrealized valuation gains are excluded.">Annual Owner ROI</span><strong>{{ portfolio.annual_owner_roi|pct }}</strong></div>
+    <div class="kpi"><span tabindex="0" data-tooltip="Portfolio Value = sum of each selected-year property valuation × that property's ownership share. Values come from annual property snapshots.">Portfolio Value</span><strong>{{ portfolio.total_value|eur0 }}</strong></div>
+    <div class="kpi"><span tabindex="0" data-tooltip="Total Debt = sum of closing loan balances for the selected year × each property's ownership share.">Total Debt</span><strong>{{ portfolio.total_debt|eur0 }}</strong></div>
+  </div>
+</section>
+
+{% if data_quality_warnings %}
+  <section class="panel data-quality-panel">
+    <div class="section-head">
+      <div>
+        <h2>Data quality for {{ selected_year }}</h2>
+        <p class="muted">Checks the inputs that can affect dashboard KPIs for the currently selected properties.</p>
+      </div>
+    </div>
+    <ul class="quality-list">
+      {% for item in data_quality_warnings %}
+        <li class="quality-{{ item.severity }}">
+          <span aria-hidden="true">⚠</span>
+          <span>{{ item.message }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+{% endif %}
+
+<section class="panel trend-panel">
+  <div class="section-head">
+    <div>
+      <h2>Portfolio Trend</h2>
+      <p class="muted">Evolution of your ownership-share portfolio indicators over time.</p>
+    </div>
+    <div class="segmented-control" aria-label="Portfolio trend metric">
+      <button type="button" class="is-active" data-trend-metric="cashflow" data-tooltip="{% if tax_calculations_enabled and tax_mode == 'after' %}Portfolio Cashflow after estimated portfolio tax. Property hover details are before portfolio tax because tax is portfolio-level.{% else %}Cashflow = cold rent - operating costs - vacancy/loss - interest. Uses your ownership-share values.{% endif %}">Cashflow</button>
+      <button type="button" data-trend-metric="debt" data-tooltip="Debt = total closing loan balance × ownership share.">Debt</button>
+      <button type="button" data-trend-metric="ltv" data-tooltip="LTV = loan-to-value = total debt / total property value. Uses your ownership-share values.">LTV</button>
+      <button type="button" data-trend-metric="value" data-tooltip="Value = selected-year property valuation × ownership share.">Value</button>
+    </div>
+  </div>
+  <canvas id="portfolioTrendChart" width="1080" height="300"></canvas>
+  {% if years|length <= 1 %}
+    <p class="muted trend-note">Add more yearly data to see a trend.</p>
+  {% endif %}
+</section>
+
+<section class="chart-grid">
+  <div class="panel">
+    <div class="section-head">
+      <h2>Annual Owner ROI by Property{% if tax_calculations_enabled %} <span class="muted-inline">(before portfolio tax)</span>{% endif %}</h2>
+    </div>
+    <canvas id="roiChart" width="720" height="280"></canvas>
+  </div>
+  <div class="panel">
+    <div class="section-head">
+      <h2>Value / Debt / Equity</h2>
+    </div>
+    <canvas id="valueDebtChart" width="720" height="280"></canvas>
+  </div>
+</section>
+
+<section class="kpi-buckets">
+  <details class="kpi-bucket compact-kpi-bucket">
+    <summary>Profitability Details</summary>
+    <div class="kpi-bucket-grid">
+      <div class="kpi"><span tabindex="0" data-tooltip="Cumulative Owner ROI = cumulative selected portfolio Cashflow / Your Cash Invested. Valuation changes are excluded.">Cumulative Owner ROI</span><strong>{{ portfolio.cumulative_owner_roi|pct }}</strong></div>
+      <div class="kpi"><span tabindex="0" data-tooltip="Free Cashflow = selected portfolio Cashflow - principal paid. In After Tax mode this is estimated liquidity left after portfolio tax and the full loan payment.">Free Cashflow</span><strong>{{ portfolio.total_free_cashflow|eur }}</strong></div>
+      <div class="kpi"><span tabindex="0" data-tooltip="Equity Build = principal paid during the selected year. It is shown separately because principal repayment reduces debt instead of being treated as a cashflow cost.">Equity Build</span><strong>{{ portfolio.total_annual_equity_build|eur }}</strong></div>
+      <div class="kpi"><span tabindex="0" data-tooltip="Annual Cash In = annual cold rent × ownership share. Utility prepayments are excluded from cashflow.">Annual Cash In</span><strong>{{ portfolio.total_annual_cash_in|eur }}</strong></div>
+      <div class="kpi"><span tabindex="0" data-tooltip="Annual Cash Out = operating costs + vacancy/loss adjustment + interest costs. Principal repayment is excluded because it builds equity.">Annual Cash Out</span><strong>{{ portfolio.total_annual_cash_out|eur }}</strong></div>
+    </div>
+  </details>
+
+  <details class="kpi-bucket compact-kpi-bucket">
+    <summary>Rental Performance</summary>
+    <div class="kpi-bucket-grid">
+      <div class="kpi"><span tabindex="0" data-tooltip="Annual Cold Rent = expected annual cold rent from rent history × ownership share. Utility prepayments are excluded.">Annual Cold Rent</span><strong>{{ portfolio.total_rent|eur }}</strong></div>
+      <div class="kpi"><span tabindex="0" data-tooltip="NOI = cold rent - vacancy/loss adjustment - operating costs. Utility prepayments and loan payments are excluded from NOI.">NOI</span><strong>{{ portfolio.total_noi|eur }}</strong></div>
+      <div class="kpi"><span tabindex="0" data-tooltip="Net Yield = NOI / Portfolio Value. Both values use your ownership share.">Net Yield</span><strong>{{ portfolio.net_yield|pct }}</strong></div>
+    </div>
+  </details>
+
+  <details class="kpi-bucket compact-kpi-bucket">
+    <summary>Financing</summary>
+    <div class="kpi-bucket-grid">
+      <div class="kpi"><span tabindex="0" data-tooltip="Debt = sum of closing loan balances for the selected year × each property's ownership share.">Debt</span><strong>{{ portfolio.total_debt|eur }}</strong></div>
+      <div class="kpi"><span tabindex="0" data-tooltip="Debt Service = interest paid + principal paid for the selected year × ownership share.">Debt Service</span><strong>{{ portfolio.total_debt_service|eur }}</strong></div>
+      <div class="kpi"><span tabindex="0" data-tooltip="LTV = loan-to-value = Total Debt / Portfolio Value. Both values use your ownership share.">LTV</span><strong>{{ portfolio.ltv|pct }}</strong></div>
+    </div>
+  </details>
+
+  <details class="kpi-bucket compact-kpi-bucket">
+    <summary>Asset Position</summary>
+    <div class="kpi-bucket-grid">
+      <div class="kpi"><span tabindex="0" data-tooltip="Portfolio Value = sum of each selected-year property valuation × that property's ownership share.">Portfolio Value</span><strong>{{ portfolio.total_value|eur }}</strong></div>
+      <div class="kpi"><span tabindex="0" data-tooltip="Equity = Portfolio Value - Total Debt. Both values use your ownership share.">Equity</span><strong>{{ portfolio.total_equity|eur }}</strong></div>
+      <div class="kpi"><span tabindex="0" data-tooltip="Your Cash Invested = total cash invested at purchase × ownership share. Bank-financed purchase amounts are excluded.">Your Cash Invested</span><strong>{{ portfolio.total_purchase_cash_out|eur }}</strong></div>
+    </div>
+  </details>
+</section>
+
+<section class="panel">
+  <div class="section-head">
+    <div>
+      <h2>Property Performance</h2>
+      <p class="muted">Key comparison first. Full calculation details are expandable below.</p>
+    </div>
+  </div>
+  <div class="table-wrap desktop-property-performance">
+    <table>
+      <thead>
+        <tr>
+          <th tabindex="0" data-tooltip="Grouped property asset. Several units in the same building are shown as one investment asset.">Property</th>
+          <th tabindex="0" data-tooltip="Annual Cold Rent = expected annual cold rent from rent history × ownership share. Utility prepayments are excluded.">Cold Rent</th>
+          <th tabindex="0" data-tooltip="Property Cashflow before portfolio tax = cold rent - operating costs - vacancy/loss - interest. Principal repayment is excluded because it becomes equity.">Cashflow{% if tax_calculations_enabled %} before tax{% endif %}</th>
+          <th tabindex="0" data-tooltip="Debt = total closing loan balance × ownership share for the selected year.">Debt</th>
+          <th tabindex="0" data-tooltip="Property Annual ROI before portfolio tax = property cashflow before portfolio tax / Your Cash Invested. Valuation changes are excluded.">Annual ROI{% if tax_calculations_enabled %} before tax{% endif %}</th>
+          <th tabindex="0" data-tooltip="LTV = closing debt / ownership-share property value.">LTV</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in portfolio.rows %}
+          <tr>
+            <td><a href="{% url 'property_detail' row.property.pk %}">{{ row.property.name }}</a></td>
+            <td>{{ row.annual_cold_rent|eur }}</td>
+            <td>{{ row.cashflow|eur }}</td>
+            <td>{{ row.closing_debt|eur }}</td>
+            <td>{{ row.annual_owner_roi|pct_or_na }}</td>
+            <td>{{ row.ltv|pct }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6">No yearly property data yet. Import the workbook or open a property and edit yearly data.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="mobile-property-performance" aria-label="Property Performance">
+    {% for row in portfolio.rows %}
+      <a class="mobile-property-card" href="{% url 'property_detail' row.property.pk %}">
+        <h3>{{ row.property.name }}</h3>
+        <div class="mobile-metric-grid">
+          <div>
+            <span>Cold Rent</span>
+            <strong>{{ row.annual_cold_rent|eur }}</strong>
+          </div>
+          <div>
+            <span>Cashflow{% if tax_calculations_enabled %} before tax{% endif %}</span>
+            <strong>{{ row.cashflow|eur }}</strong>
+          </div>
+          <div>
+            <span>Debt</span>
+            <strong>{{ row.closing_debt|eur }}</strong>
+          </div>
+          <div>
+            <span>Annual ROI{% if tax_calculations_enabled %} before tax{% endif %}</span>
+            <strong>{{ row.annual_owner_roi|pct_or_na }}</strong>
+          </div>
+          <div>
+            <span>LTV</span>
+            <strong>{{ row.ltv|pct }}</strong>
+          </div>
+        </div>
+      </a>
+    {% empty %}
+      <p class="muted">No yearly property data yet. Import the workbook or open a property and edit yearly data.</p>
+    {% endfor %}
+  </div>
+</section>
+
+<details class="detail-panel">
+  <summary>Show detailed performance table and formulas</summary>
+  {% if tax_calculations_enabled %}
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <h2>Portfolio Tax Bridge</h2>
+          <p class="muted">Tax is estimated once for the selected portfolio scope. Property rows below remain before portfolio tax.</p>
+        </div>
+      </div>
+      <div class="kpi-bucket-grid">
+        <div class="kpi"><span tabindex="0" data-tooltip="Portfolio Cashflow before tax = sum of property cashflows before portfolio tax.">Cashflow before tax</span><strong>{{ portfolio.total_cashflow_before_tax|eur }}</strong></div>
+        <div class="kpi"><span tabindex="0" data-tooltip="Yearly tax-deductible costs are tax-only deductions from Settings. They reduce taxable result but not pre-tax Cashflow.">Tax-deductible costs</span><strong>{{ portfolio.annual_tax_deductible_costs|eur }}</strong></div>
+        <div class="kpi"><span tabindex="0" data-tooltip="Portfolio taxable result = portfolio Cashflow before tax - yearly tax-deductible costs.">Taxable result</span><strong>{{ portfolio.portfolio_taxable_result|eur }}</strong></div>
+        <div class="kpi"><span tabindex="0" data-tooltip="Estimated Tax / Benefit = taxable result × effective tax rate from Settings. Negative values are estimated tax benefits when enabled.">Estimated Tax / Benefit</span><strong>{{ portfolio.total_estimated_tax|eur }}</strong></div>
+        <div class="kpi"><span tabindex="0" data-tooltip="Cashflow after tax = portfolio Cashflow before tax - estimated tax / benefit.">Cashflow after tax</span><strong>{{ portfolio.total_cashflow_after_tax|eur }}</strong></div>
+        <div class="kpi"><span tabindex="0" data-tooltip="Free Cashflow after tax = after-tax Cashflow - principal repayment.">Free Cashflow after tax</span><strong>{{ portfolio.total_free_cashflow_after_tax|eur }}</strong></div>
+      </div>
+    </section>
+  {% endif %}
+  <section class="panel">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th tabindex="0" data-tooltip="Grouped property asset. Several apartments in the same building are shown as one investment asset.">Property</th>
+            <th tabindex="0" data-tooltip="Value = selected-year property valuation × ownership share.">Value</th>
+            <th tabindex="0" data-tooltip="Annual Cold Rent = expected annual cold rent from effective-date rent periods × ownership share. Assumes tenants pay.">Cold Rent</th>
+            <th tabindex="0" data-tooltip="Cash In = annual cold rent × ownership share. Utility prepayments are excluded from cashflow.">Cash In</th>
+            <th tabindex="0" data-tooltip="Cash Out = operating costs + vacancy/loss adjustment + interest costs. Principal repayment is excluded because it becomes equity.">Cash Out</th>
+            <th tabindex="0" data-tooltip="Property Cashflow before portfolio tax = Cash In - Cash Out = cold rent - operating costs - vacancy/loss - interest.">Cashflow before tax</th>
+            <th tabindex="0" data-tooltip="Property Free Cashflow before portfolio tax = property cashflow before portfolio tax - principal paid.">Free Cashflow before tax</th>
+            <th tabindex="0" data-tooltip="Costs = yearly recurring non-recoverable expense × ownership share + annual snapshot costs × ownership share. If recurring expense is blank, default = 5% of cold rent.">Costs</th>
+            <th tabindex="0" data-tooltip="NOI = cold rent - vacancy/loss adjustment - operating costs. Utility prepayments and loan payments are excluded from NOI.">NOI</th>
+            <th tabindex="0" data-tooltip="Debt = total closing loan balance × ownership share for the selected year.">Debt</th>
+            <th tabindex="0" data-tooltip="Interest = total annual interest paid × ownership share for the selected year. This is a financing cost.">Interest</th>
+            <th tabindex="0" data-tooltip="Debt Service = total annual loan cash out × ownership share. It includes interest and principal repayment, plus any extra repayment captured in the loan year.">Debt Service</th>
+            <th tabindex="0" data-tooltip="Equity Build = principal paid during the year. It is shown separately because principal repayment reduces debt instead of being treated as a cashflow cost.">Equity Build</th>
+            <th tabindex="0" data-tooltip="Your Cash Invested = total cash invested at purchase × ownership share. Bank-financed purchase amounts are excluded.">Your Cash Invested</th>
+            <th tabindex="0" data-tooltip="Property Annual ROI before portfolio tax = property cashflow before portfolio tax / Your Cash Invested. Unrealized valuation gains are excluded.">Annual ROI before tax</th>
+            <th tabindex="0" data-tooltip="Property Cumulative ROI before portfolio tax = cumulative property cashflow before portfolio tax / Your Cash Invested. Unrealized valuation gains are excluded.">Cumulative ROI before tax</th>
+            <th tabindex="0" data-tooltip="LTV = closing debt / ownership-share property value.">LTV</th>
+            <th tabindex="0" data-tooltip="DSCR = NOI / debt service. Higher means the property covers loan payments more comfortably.">DSCR</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in portfolio.rows %}
+            <tr>
+              <td><a href="{% url 'property_detail' row.property.pk %}">{{ row.property.name }}</a></td>
+              <td>{{ row.property_value|eur }}</td>
+              <td>{{ row.annual_cold_rent|eur }}</td>
+              <td>{{ row.annual_cash_in|eur }}</td>
+              <td>{{ row.annual_cash_out|eur }}</td>
+              <td>{{ row.cashflow_before_tax|eur }}</td>
+              <td>{{ row.free_cashflow_before_tax|eur }}</td>
+              <td>{{ row.operating_costs|eur }}</td>
+              <td>{{ row.noi|eur }}</td>
+              <td>{{ row.closing_debt|eur }}</td>
+              <td>{{ row.interest_paid|eur }}</td>
+              <td>{{ row.debt_service|eur }}</td>
+              <td>{{ row.annual_equity_build|eur }}</td>
+              <td>{{ row.purchase_cash_out|eur }}</td>
+              <td>{{ row.annual_owner_roi|pct_or_na }}</td>
+              <td>{{ row.cumulative_owner_roi|pct_or_na }}</td>
+              <td>{{ row.ltv|pct }}</td>
+              <td>{{ row.debt_service_coverage|floatformat:2 }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="18">No yearly property data yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</details>
+
+{{ chart_data|json_script:"chart-data" }}
+<script src="{% static 'portfolio/js/charts.js' %}?v=20260601-mobile-dashboard"></script>
+<script>
+  const data = JSON.parse(document.getElementById("chart-data").textContent);
+  const trendMetricConfig = {
+    cashflow: { label: "Cashflow", suffix: "€", color: "#0f766e" },
+    debt: { label: "Debt", suffix: "€", color: "#2563eb" },
+    ltv: { label: "LTV", suffix: "%", color: "#b45309" },
+    value: { label: "Value", suffix: "€", color: "#7c3aed" },
+  };
+  let selectedTrendMetric = "cashflow";
+  document.querySelector("#dashboard-filter-form select")?.addEventListener("change", (event) => {
+    event.target.form.submit();
+  });
+  document.querySelectorAll("#dashboard-filter-form input[name='properties']").forEach((input) => {
+    input.addEventListener("change", () => input.form.submit());
+  });
+  document.querySelectorAll("#dashboard-filter-form input[name='tax']").forEach((input) => {
+    input.addEventListener("change", () => input.form.submit());
+  });
+
+  function formatTrendValue(value, suffix) {
+    if (suffix === "%") return `${Number(value).toFixed(1)}%`;
+    if (suffix === "€") return `€${Math.round(Number(value)).toLocaleString("en-US")}`;
+    return Number(value).toLocaleString("en-US");
+  }
+
+  function trendTooltipLines(metric) {
+    const breakdowns = data.trend.breakdowns?.[metric] || [];
+    return breakdowns.map((rows, index) => {
+      if (!rows.length) return ["No detail rows stored."];
+      if (metric === "ltv") {
+        return [
+          `Portfolio LTV: ${formatTrendValue(data.trend.metrics.debt[index], "€")} / ${formatTrendValue(data.trend.metrics.value[index], "€")}`,
+          ...rows.map((row) => `${row.label}: ${formatTrendValue(row.debt, "€")} / ${formatTrendValue(row.value, "€")} = ${formatTrendValue(row.ltv, "%")}`),
+        ];
+      }
+      const suffix = trendMetricConfig[metric].suffix;
+      return rows.map((row) => `${row.label}: ${formatTrendValue(row.value, suffix)}`);
+    });
+  }
+
+  document.querySelectorAll("[data-trend-metric]").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedTrendMetric = button.dataset.trendMetric;
+      document.querySelectorAll("[data-trend-metric]").forEach((item) => {
+        item.classList.toggle("is-active", item === button);
+      });
+      drawDashboardCharts();
+    });
+  });
+
+  function drawDashboardCharts() {
+    const trendConfig = trendMetricConfig[selectedTrendMetric];
+    drawLineTrendChart(
+      "portfolioTrendChart",
+      data.trend.labels,
+      data.trend.metrics[selectedTrendMetric],
+      trendConfig.suffix,
+      trendConfig.label,
+      trendConfig.color,
+      { tooltipLines: trendTooltipLines(selectedTrendMetric) },
+    );
+    drawBarChart("roiChart", data.labels, data.roi, "%");
+    drawStackedContributionChart("valueDebtChart", data.valueDebt.labels, data.valueDebt.series, "€");
+  }
+  drawDashboardCharts();
+  window.addEventListener("resize", drawDashboardCharts);
+</script>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "portfolio/base.html" %}
+{% load portfolio_format %}
+{% block title %}Deals{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Deals</h1>
+    <p>Saved purchase ideas compared against your portfolio baseline.</p>
+  </div>
+  <div class="actions">
+    <form method="get" class="inline-form" id="potential-deal-year-form">
+      <select name="year" aria-label="Comparison year">
+        {% for year in years %}
+          <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
+        {% endfor %}
+      </select>
+    </form>
+    <a class="button" href="{% url 'potential_deal_create' %}">Add Deal</a>
+  </div>
+</div>
+
+<section class="property-grid">
+  {% for row in rows %}
+    <a class="property-card property-card-link potential-deal-card" href="{% url 'potential_deal_detail' row.deal.pk %}?year={{ selected_year }}">
+      <div class="property-card-head">
+        <div>
+          <h2>{{ row.deal.name }}</h2>
+          <p>{{ row.deal.address|default:"No address stored" }}</p>
+        </div>
+        <span class="status-pill">{{ row.deal.get_status_display }}</span>
+      </div>
+      <div class="property-meta">
+        <span>{{ row.deal.purchase_price|eur }} price</span>
+        <span>{{ row.metrics.owner_annual_cold_rent|eur }} your annual cold rent</span>
+        <span>{{ row.metrics.cashflow|eur }} cashflow</span>
+        <span>{{ row.metrics.annual_owner_roi|pct }} ROI</span>
+      </div>
+      {% if row.scenario %}
+        <p class="muted">Scenario: {{ row.scenario.name }} · LTV {{ row.metrics.ltv|pct }}</p>
+      {% else %}
+        <p class="muted">Add a financing scenario to calculate debt and ROI impact.</p>
+      {% endif %}
+    </a>
+  {% empty %}
+    <section class="panel empty-state">
+      <h2>No deals yet</h2>
+      <p>Add a potential purchase to compare its cashflow, ROI, and financing impact with your current portfolio.</p>
+      <a class="button" href="{% url 'potential_deal_create' %}">Add Deal</a>
+    </section>
+  {% endfor %}
+</section>
+
+<script>
+  document.querySelector("#potential-deal-year-form select")?.addEventListener("change", (event) => {
+    event.target.form.submit();
+  });
+</script>
+{% endblock %}

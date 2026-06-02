@@ -1,0 +1,93 @@
+{% extends "portfolio/base.html" %}
+{% load portfolio_format %}
+{% block title %}Exports{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Exports</h1>
+    <p>Generate reports for financing, portfolio review, and record keeping.</p>
+  </div>
+</div>
+
+<section class="panel">
+  <div class="section-head">
+    <div>
+      <h2>Bank Financing Overview</h2>
+      <p class="muted">Current object and loan data for bank financing requests.</p>
+    </div>
+    <span class="value-scope-badge full" tabindex="0" data-tooltip="Amounts are total property values before ownership-share calculation.">Showing full property values</span>
+  </div>
+  <h3>Bank Financing Export Preview</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Property</th>
+          <th>Value</th>
+          <th>Rent</th>
+          <th>Debt</th>
+          <th>Monthly payment</th>
+          <th>Interest rate</th>
+          <th>Fixed until</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in bank_preview.rows %}
+          <tr>
+            <td>{{ row.property.name }}</td>
+            <td>{{ row.property_value|eur }}</td>
+            <td>{{ row.annual_cold_rent|eur }}</td>
+            <td>{{ row.debt|eur }}</td>
+            <td>{{ row.monthly_payment|eur }}</td>
+            <td>{% if row.interest_rate is not None %}{{ row.interest_rate|pct }}{% else %}-{% endif %}</td>
+            <td>{% if row.fixed_until_year %}{{ row.fixed_until_year }}{% else %}-{% endif %}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7">No properties available for export.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if bank_preview.warnings %}
+    <ul class="warning-list">
+      {% for warning in bank_preview.warnings %}
+        <li>⚠ {{ warning }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+  <div class="export-actions">
+    <a class="button" href="{% url 'export_bank_financing_pdf' %}?save=1">PDF</a>
+    <a class="button secondary" href="{% url 'export_bank_financing_excel' %}?save=1">Excel</a>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Recent Exports</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Created</th><th>Type</th><th>Title</th><th>File</th><th>Local path</th></tr></thead>
+      <tbody>
+        {% for export in exports %}
+          <tr>
+            <td>{{ export.created_at }}</td>
+            <td>{{ export.get_export_type_display }}</td>
+            <td>{{ export.title }}</td>
+            <td>
+              {% if export.file_name %}
+                <a href="{% url 'export_file' export.file_name %}" target="_blank">Open</a>
+                <span class="muted">{{ export.file_name }}</span>
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td>{% if export.file_name %}<code>{{ export_dir }}/{{ export.file_name }}</code>{% else %}-{% endif %}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5">No exports generated yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% endblock %}

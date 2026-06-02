@@ -1,0 +1,58 @@
+{% extends "portfolio/base.html" %}
+{% block title %}Backup{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Backup</h1>
+    <p>Create and restore database backups for CasaFlow.</p>
+  </div>
+</div>
+
+<section class="two-col maintenance-grid">
+  <div class="panel">
+    <h2>Create Backup</h2>
+    <p class="muted">Downloadable database backups are for maintenance, not daily reporting.</p>
+    <form method="post" action="{% url 'create_backup' %}">{% csrf_token %}<button type="submit">Create Database Backup</button></form>
+  </div>
+  <div class="panel">
+    <h2>Restore Database</h2>
+    <form method="post" action="{% url 'restore_backup' %}" enctype="multipart/form-data" class="form">
+      {% csrf_token %}
+      {{ restore_form.non_field_errors }}
+      <p>
+        {{ restore_form.backup_file.label_tag }}
+        {{ restore_form.backup_file }}
+        <span class="helptext">{{ restore_form.backup_file.help_text }}</span>
+        {{ restore_form.backup_file.errors }}
+      </p>
+      <label class="checkbox-field">
+        {{ restore_form.confirm_replace }}
+        <span>{{ restore_form.confirm_replace.label }}</span>
+      </label>
+      {{ restore_form.confirm_replace.errors }}
+      <button type="submit">Restore Backup</button>
+    </form>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Recent Backups</h2>
+  <p class="muted">Backup files are stored in <code>{{ backup_dir }}</code>.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Created</th><th>Title</th><th>File</th></tr></thead>
+      <tbody>
+        {% for backup in backups %}
+          <tr>
+            <td>{{ backup.created_at }}</td>
+            <td>{{ backup.title }}</td>
+            <td>{{ backup.file_name|default:"-" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="3">No backups created yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,136 @@
+{% extends "portfolio/base.html" %}
+{% block title %}Create Mietbescheinigung{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Create Mietbescheinigung</h1>
+    <p>{{ property.name }} · {{ unit.label }}</p>
+  </div>
+  <div class="actions">
+    <a class="button secondary" href="{{ cancel_url }}">Cancel</a>
+  </div>
+</div>
+
+<form method="post" enctype="multipart/form-data" class="form panel mietbescheinigung-form">
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="error-summary">{{ form.non_field_errors }}</div>{% endif %}
+  {% if source_warnings %}
+    <div class="error-summary">
+      <strong>Required data is missing.</strong>
+      <ul>
+        {% for warning in source_warnings %}<li>{{ warning }}</li>{% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <div class="section-head">
+    <div>
+      <h2>Template</h2>
+      <p class="muted">Choose the authority form and confirm the prefilled data before generating the PDF.</p>
+    </div>
+  </div>
+  <div class="form-grid">
+    <div class="field-group">{{ form.template.label_tag }}{{ form.template }}{{ form.template.errors }}</div>
+    <div class="field-group">{{ form.landlord_profile.label_tag }}{{ form.landlord_profile }}{{ form.landlord_profile.errors }}</div>
+  </div>
+
+  <div class="section-head form-section-head"><h2>Landlord</h2></div>
+  <div class="form-grid">
+    <div class="field-group">{{ form.landlord_name.label_tag }}{{ form.landlord_name }}{{ form.landlord_name.errors }}</div>
+    <div class="field-group">{{ form.landlord_street.label_tag }}{{ form.landlord_street }}{{ form.landlord_street.errors }}</div>
+    <div class="field-group">{{ form.landlord_zip.label_tag }}{{ form.landlord_zip }}{{ form.landlord_zip.errors }}</div>
+    <div class="field-group">{{ form.landlord_city.label_tag }}{{ form.landlord_city }}{{ form.landlord_city.errors }}</div>
+    <div class="field-group">{{ form.landlord_phone.label_tag }}{{ form.landlord_phone }}{{ form.landlord_phone.errors }}</div>
+    <div class="field-group">{{ form.landlord_fax.label_tag }}{{ form.landlord_fax }}{{ form.landlord_fax.errors }}</div>
+    <div class="field-group full-span">{{ form.landlord_email.label_tag }}{{ form.landlord_email }}{{ form.landlord_email.errors }}</div>
+    <div class="field-group">
+      {{ form.signature_image.label_tag }}
+      {{ form.signature_image }}{{ form.signature_image.errors }}
+      {% if selected_landlord.signature_image %}
+        <small>Saved signature available for {{ selected_landlord.name }}.</small>
+      {% else %}
+        <small>Optional. Upload a PNG or JPG signature for this PDF or a new landlord profile.</small>
+      {% endif %}
+    </div>
+    <label class="checkbox-field">
+      {{ form.include_signature }}
+      <span>{{ form.include_signature.label }}</span>
+    </label>
+  </div>
+
+  <div class="section-head form-section-head"><h2>Tenant And Unit</h2></div>
+  <div class="form-grid">
+    <div class="field-group">{{ form.tenant_name.label_tag }}{{ form.tenant_name }}{{ form.tenant_name.errors }}</div>
+    <div class="field-group">{{ form.tenant_contact.label_tag }}{{ form.tenant_contact }}{{ form.tenant_contact.errors }}</div>
+    <div class="field-group">{{ form.tenant_street.label_tag }}{{ form.tenant_street }}{{ form.tenant_street.errors }}</div>
+    <div class="field-group">{{ form.tenant_zip.label_tag }}{{ form.tenant_zip }}{{ form.tenant_zip.errors }}</div>
+    <div class="field-group">{{ form.tenant_city.label_tag }}{{ form.tenant_city }}{{ form.tenant_city.errors }}</div>
+    <div class="field-group">{{ form.lease_start.label_tag }}{{ form.lease_start }}{{ form.lease_start.errors }}</div>
+    <div class="field-group">{{ form.tenant_count.label_tag }}{{ form.tenant_count }}{{ form.tenant_count.errors }}</div>
+    <div class="field-group">{{ form.floor.label_tag }}{{ form.floor }}{{ form.floor.errors }}</div>
+    <div class="field-group">{{ form.living_area_sqm.label_tag }}{{ form.living_area_sqm }}{{ form.living_area_sqm.errors }}</div>
+    <div class="field-group">{{ form.rooms.label_tag }}{{ form.rooms }}{{ form.rooms.errors }}</div>
+    <div class="field-group">{{ form.construction_year.label_tag }}{{ form.construction_year }}{{ form.construction_year.errors }}</div>
+    <div class="field-group">{{ form.building_area_sqm.label_tag }}{{ form.building_area_sqm }}{{ form.building_area_sqm.errors }}</div>
+  </div>
+
+  <div class="section-head form-section-head"><h2>Rent</h2></div>
+  <div class="form-grid">
+    <div class="field-group">{{ form.rent_valid_from.label_tag }}{{ form.rent_valid_from }}{{ form.rent_valid_from.errors }}</div>
+    <div class="field-group">{{ form.cold_rent.label_tag }}{{ form.cold_rent }}{{ form.cold_rent.errors }}</div>
+    <div class="field-group">{{ form.operating_costs.label_tag }}{{ form.operating_costs }}{{ form.operating_costs.errors }}</div>
+    <div class="field-group">{{ form.total_rent.label_tag }}{{ form.total_rent }}{{ form.total_rent.errors }}</div>
+  </div>
+
+  <details class="advanced-fields" open>
+    <summary>Template-specific details</summary>
+    <div class="form-grid">
+      <div class="field-group">{{ form.heating_costs.label_tag }}{{ form.heating_costs }}{{ form.heating_costs.errors }}</div>
+      <div class="field-group">{{ form.warm_water_costs.label_tag }}{{ form.warm_water_costs }}{{ form.warm_water_costs.errors }}</div>
+      <div class="field-group">{{ form.garage_cost.label_tag }}{{ form.garage_cost }}{{ form.garage_cost.errors }}</div>
+      <div class="field-group">{{ form.parking_cost.label_tag }}{{ form.parking_cost }}{{ form.parking_cost.errors }}</div>
+      <div class="field-group">{{ form.arrears_amount.label_tag }}{{ form.arrears_amount }}{{ form.arrears_amount.errors }}</div>
+      <div class="field-group">{{ form.issue_place.label_tag }}{{ form.issue_place }}{{ form.issue_place.errors }}</div>
+      <div class="field-group">{{ form.issue_date.label_tag }}{{ form.issue_date }}{{ form.issue_date.errors }}</div>
+      <label class="checkbox-field">{{ form.is_sublease }} <span>{{ form.is_sublease.label }}</span></label>
+      <label class="checkbox-field">{{ form.public_funded }} <span>{{ form.public_funded.label }}</span></label>
+      <label class="checkbox-field">{{ form.operating_costs_advance }} <span>{{ form.operating_costs_advance.label }}</span></label>
+      <label class="checkbox-field">{{ form.heating_in_total_rent }} <span>{{ form.heating_in_total_rent.label }}</span></label>
+      <label class="checkbox-field">{{ form.warm_water_in_total_rent }} <span>{{ form.warm_water_in_total_rent.label }}</span></label>
+      <label class="checkbox-field">{{ form.garage_in_total_rent }} <span>{{ form.garage_in_total_rent.label }}</span></label>
+      <label class="checkbox-field">{{ form.parking_in_total_rent }} <span>{{ form.parking_in_total_rent.label }}</span></label>
+      <label class="checkbox-field">{{ form.arrears_existing }} <span>{{ form.arrears_existing.label }}</span></label>
+      <label class="checkbox-field">{{ form.rent_reduction }} <span>{{ form.rent_reduction.label }}</span></label>
+    </div>
+  </details>
+
+  <div class="actions">
+    <button type="submit" name="action" value="generate" {% if source_warnings %}disabled{% endif %}>Generate PDF</button>
+    <button type="submit" name="action" value="save_landlord" class="secondary">Save New Landlord</button>
+    <a class="button secondary" href="{{ cancel_url }}">Cancel</a>
+  </div>
+</form>
+<script>
+  const templateSelect = document.getElementById("{{ form.template.id_for_label }}");
+  const landlordSelect = document.getElementById("{{ form.landlord_profile.id_for_label }}");
+  function reloadMietbescheinigungForm() {
+    const params = new URLSearchParams(window.location.search);
+    params.set("template", templateSelect.value);
+    params.set("landlord", landlordSelect.value || "__new__");
+    window.location.search = params.toString();
+  }
+  if (templateSelect && landlordSelect) {
+    templateSelect.addEventListener("change", reloadMietbescheinigungForm);
+    landlordSelect.addEventListener("change", reloadMietbescheinigungForm);
+  }
+  const signatureInput = document.getElementById("{{ form.signature_image.id_for_label }}");
+  const includeSignature = document.getElementById("{{ form.include_signature.id_for_label }}");
+  if (signatureInput && includeSignature) {
+    signatureInput.addEventListener("change", () => {
+      if (signatureInput.files && signatureInput.files.length) {
+        includeSignature.disabled = false;
+      }
+    });
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,143 @@
+{% extends "portfolio/base.html" %}
+{% load portfolio_format %}
+{% block title %}{{ property.name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ property.name }}</h1>
+    <p>{{ property.display_address|default:"No address stored" }}</p>
+  </div>
+  <div class="actions">
+    {% if edit_mode %}
+      <a class="button secondary" href="{% url 'property_detail' property.pk %}">Cancel</a>
+    {% else %}
+      <a class="button secondary" href="?edit=1">Edit</a>
+    {% endif %}
+  </div>
+</div>
+
+{% if edit_mode %}
+  <form method="post" enctype="multipart/form-data" class="form panel dossier-form">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="error-summary">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="form-grid">
+      <p>{{ form.name.label_tag }}{{ form.name }}{{ form.name.errors }}</p>
+      <p>{{ form.object_type.label_tag }}{{ form.object_type }}{{ form.object_type.errors }}</p>
+      <p>{{ form.construction_year.label_tag }}{{ form.construction_year }}{{ form.construction_year.errors }}</p>
+      <p class="full-span">{{ form.street_address.label_tag }}{{ form.street_address }}{{ form.street_address.errors }}</p>
+      <p>{{ form.postal_code.label_tag }}{{ form.postal_code }}{{ form.postal_code.errors }}</p>
+      <p>{{ form.city.label_tag }}{{ form.city }}{{ form.city.errors }}</p>
+      <p>{{ form.total_building_area_sqm.label_tag }}{{ form.total_building_area_sqm }}{{ form.total_building_area_sqm.errors }}</p>
+      <div class="photo-edit-field">
+        <span class="form-label">Property photo</span>
+        {% if property.photo %}
+          <div class="photo-edit-current">
+            <img src="{{ property.photo.url }}" alt="{{ property.name }}">
+            <label class="checkbox-field">{{ form.remove_photo }} <span>Remove current photo</span></label>
+          </div>
+        {% else %}
+          <p class="muted">No photo uploaded yet.</p>
+        {% endif %}
+        <label for="{{ form.photo.id_for_label }}">{{ form.photo.label }}</label>
+        {{ form.photo }}{{ form.photo.errors }}
+        <span class="helptext">{{ form.photo.help_text }}</span>
+      </div>
+      <p class="full-span">{{ form.notes.label_tag }}{{ form.notes }}{{ form.notes.errors }}</p>
+    </div>
+    <div class="actions">
+      <button type="submit">Save</button>
+      <a class="button secondary" href="{% url 'property_detail' property.pk %}">Cancel</a>
+    </div>
+  </form>
+{% else %}
+  <section class="property-dossier">
+    <div class="property-photo-panel">
+      {% if property.photo %}
+        <img src="{{ property.photo.url }}" alt="{{ property.name }}">
+      {% else %}
+        <div class="photo-placeholder">
+          <span>No photo</span>
+        </div>
+      {% endif %}
+    </div>
+    <section class="panel">
+      <div class="section-head">
+        <h2>Property Info</h2>
+      </div>
+      <dl class="dossier-list">
+        <dt>Object type</dt><dd>{{ property.get_object_type_display|default:"-" }}</dd>
+        <dt>Address</dt><dd>{{ property.display_address|default:"-" }}</dd>
+        <dt>Construction year</dt><dd>{{ property.administration.construction_year|default:"-" }}</dd>
+        <dt>Total property area</dt><dd>{% if property.administration.total_building_area_sqm %}{{ property.administration.total_building_area_sqm }} sqm{% else %}-{% endif %}</dd>
+      </dl>
+      <form method="post" class="notes-inline-form">
+        {% csrf_token %}
+        <input type="hidden" name="form_kind" value="notes">
+        <label for="property-notes">Notes</label>
+        <textarea id="property-notes" name="notes" rows="{% if property.notes %}5{% else %}1{% endif %}" data-autogrow placeholder="Add notes for this property...">{{ property.notes }}</textarea>
+        <div class="actions">
+          <button type="submit" class="secondary">Save Notes</button>
+        </div>
+      </form>
+    </section>
+  </section>
+{% endif %}
+
+{% if property.loans.exists and not edit_mode %}
+  <section class="panel">
+    <div class="section-head">
+      <div>
+        <h2>Loans</h2>
+        <p class="muted">Open a loan to edit its details and yearly balances.</p>
+      </div>
+    </div>
+    <div class="loan-card-grid">
+      {% for loan in property.loans.all %}
+        <a class="loan-card" href="{% url 'loan_update' loan.pk %}">
+          <div>
+            <span>Loan</span>
+            <h3>{{ loan.name }}</h3>
+            <p>{% if loan.lender %}{{ loan.lender }}{% else %}No lender stored{% endif %}</p>
+          </div>
+          <strong>{{ loan.original_amount|eur }}</strong>
+        </a>
+      {% endfor %}
+    </div>
+  </section>
+{% endif %}
+
+<section class="panel">
+  <div class="section-head">
+    <div>
+      <h2>Units</h2>
+      <p class="muted">Open a unit to manage the current tenant, rent, and unit details.</p>
+    </div>
+    {% if not edit_mode %}<a class="button" href="{% url 'unit_create' %}?property={{ property.pk }}">Add Unit</a>{% endif %}
+  </div>
+  <div class="unit-card-grid">
+    {% for row in unit_overviews %}
+      <a class="unit-card" href="{% url 'unit_detail' row.unit.pk %}">
+        <div>
+          <h3>{{ row.unit.label }}</h3>
+          <p>{% if row.unit.floor %}{{ row.unit.floor }}{% else %}No floor stored{% endif %}{% if row.unit.area_sqm %} · {{ row.unit.area_sqm }} sqm{% endif %}</p>
+        </div>
+        <div>
+          <strong>{% if row.active_lease %}{{ row.active_lease.tenant }}{% else %}Vacant{% endif %}</strong>
+        </div>
+      </a>
+    {% empty %}
+      <p>No units yet. <a href="{% url 'unit_create' %}?property={{ property.pk }}">Add unit</a></p>
+    {% endfor %}
+  </div>
+</section>
+<script>
+  document.querySelectorAll("[data-autogrow]").forEach((textarea) => {
+    function resizeTextarea() {
+      textarea.style.height = "auto";
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    }
+    resizeTextarea();
+    textarea.addEventListener("input", resizeTextarea);
+  });
+</script>
+{% endblock %}

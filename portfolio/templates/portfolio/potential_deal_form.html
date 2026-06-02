@@ -1,0 +1,70 @@
+{% extends "portfolio/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<section class="form-panel">
+  <h1>{{ title }}</h1>
+  <div class="scope-badge-row">
+    <span class="value-scope-badge full" tabindex="0" data-tooltip="Amounts are total property values before ownership-share calculation.">Showing full property values</span>
+  </div>
+  <form method="post" class="form">
+    {% csrf_token %}
+    {% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
+    <p>
+      <label for="{{ form.name.id_for_label }}">Name</label>
+      <input id="{{ form.name.id_for_label }}" name="{{ form.name.html_name }}" value="{{ form.name.value|default_if_none:'' }}" maxlength="160" required>
+      {{ form.name.errors }}
+    </p>
+    <p>
+      <label for="{{ form.address.id_for_label }}">Address</label>
+      <textarea id="{{ form.address.id_for_label }}" name="{{ form.address.html_name }}" rows="2">{{ form.address.value|default_if_none:'' }}</textarea>
+      {{ form.address.errors }}
+    </p>
+    <p>
+      <label for="{{ form.status.id_for_label }}">Status</label>
+      <select id="{{ form.status.id_for_label }}" name="{{ form.status.html_name }}">
+        {% for value,label in form.status.field.choices %}
+          <option value="{{ value }}" {% if form.status.value == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      {{ form.status.errors }}
+    </p>
+    <p>
+      <label for="{{ form.purchase_price.id_for_label }}">Purchase price</label>
+      <input id="{{ form.purchase_price.id_for_label }}" name="{{ form.purchase_price.html_name }}" type="number" step="0.01" min="0" value="{{ form.purchase_price.value|default_if_none:'' }}">
+      {% if form.purchase_price.help_text %}<span class="helptext">{{ form.purchase_price.help_text }}</span>{% endif %}
+      {{ form.purchase_price.errors }}
+    </p>
+    <p>
+      <label for="{{ form.ownership_share.id_for_label }}">Ownership share</label>
+      <input id="{{ form.ownership_share.id_for_label }}" name="{{ form.ownership_share.html_name }}" type="number" step="0.000001" min="0" max="1" value="{{ form.ownership_share.value|default_if_none:'' }}">
+      {% if form.ownership_share.help_text %}<span class="helptext">{{ form.ownership_share.help_text }}</span>{% endif %}
+      {{ form.ownership_share.errors }}
+    </p>
+    <p>
+      <label for="{{ form.expected_monthly_cold_rent.id_for_label }}">Expected monthly cold rent</label>
+      <input id="{{ form.expected_monthly_cold_rent.id_for_label }}" name="{{ form.expected_monthly_cold_rent.html_name }}" type="number" step="0.01" min="0" value="{{ form.expected_monthly_cold_rent.value|default_if_none:'' }}">
+      {% if form.expected_monthly_cold_rent.help_text %}<span class="helptext">{{ form.expected_monthly_cold_rent.help_text }}</span>{% endif %}
+      {{ form.expected_monthly_cold_rent.errors }}
+    </p>
+    <details class="detail-panel advanced-fields">
+      <summary>Advanced deal assumptions</summary>
+      <div class="form-grid">
+        <p>{{ form.expected_monthly_utility_prepayment.label_tag }}{{ form.expected_monthly_utility_prepayment }}<span class="helptext">{{ form.expected_monthly_utility_prepayment.help_text }}</span>{{ form.expected_monthly_utility_prepayment.errors }}</p>
+        <p>{{ form.yearly_non_recoverable_costs.label_tag }}{{ form.yearly_non_recoverable_costs }}<span class="helptext">{{ form.yearly_non_recoverable_costs.help_text }}</span>{{ form.yearly_non_recoverable_costs.errors }}</p>
+        <p>{{ form.buying_costs.label_tag }}{{ form.buying_costs }}<span class="helptext">{{ form.buying_costs.help_text }}</span>{{ form.buying_costs.errors }}</p>
+        <p>{{ form.minimum_dscr.label_tag }}{{ form.minimum_dscr }}<span class="helptext">{{ form.minimum_dscr.help_text }}</span>{{ form.minimum_dscr.errors }}</p>
+        <p>{{ form.maximum_ltv.label_tag }}{{ form.maximum_ltv }}<span class="helptext">{{ form.maximum_ltv.help_text }}</span>{{ form.maximum_ltv.errors }}</p>
+        <p class="full-span">{{ form.notes.label_tag }}{{ form.notes }}{{ form.notes.errors }}</p>
+      </div>
+    </details>
+    <div class="actions">
+      <button type="submit">Save</button>
+      {% if deal %}
+        <a class="button secondary" href="{% url 'potential_deal_detail' deal.pk %}">Cancel</a>
+      {% else %}
+        <a class="button secondary" href="{% url 'potential_deal_list' %}">Cancel</a>
+      {% endif %}
+    </div>
+  </form>
+</section>
+{% endblock %}

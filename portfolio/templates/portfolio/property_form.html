@@ -1,0 +1,89 @@
+{% extends "portfolio/base.html" %}
+{% load portfolio_format %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<section class="form-panel wide-form-panel">
+  <h1>{{ title }}</h1>
+  <p>
+    Enter full-property amounts. Rent and tenant history are managed on the unit pages; this page only stores yearly property values, costs, and corrections.
+  </p>
+  <div class="scope-badge-row">
+    <span class="value-scope-badge full" tabindex="0" data-tooltip="Amounts are total property values before ownership-share calculation.">Showing full property values</span>
+  </div>
+  <form method="post" class="form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% if form.errors %}
+      <div class="error-summary">
+        <strong>Save failed.</strong>
+        {{ form.errors }}
+      </div>
+    {% endif %}
+    {{ form.selected_year }}
+    <div class="form-grid">
+      <p>{{ form.name.label_tag }}{{ form.name }}{{ form.name.errors }}</p>
+      <p>{{ form.object_type.label_tag }}{{ form.object_type }}{{ form.object_type.errors }}</p>
+      <p>{{ form.ownership_share.label_tag }}{{ form.ownership_share }}<span class="helptext">{{ form.ownership_share.help_text }}</span>{{ form.ownership_share.errors }}</p>
+      <p>{{ form.purchase_price.label_tag }}{{ form.purchase_price }}<span class="helptext">{{ form.purchase_price.help_text }}</span>{{ form.purchase_price.errors }}</p>
+      <p>{{ form.cash_invested_at_purchase.label_tag }}{{ form.cash_invested_at_purchase }}<span class="helptext">{{ form.cash_invested_at_purchase.help_text }}</span>{{ form.cash_invested_at_purchase.errors }}</p>
+      <p>{{ form.acquisition_date.label_tag }}{{ form.acquisition_date }}<span class="helptext">{{ form.acquisition_date.help_text }}</span>{{ form.acquisition_date.errors }}</p>
+      <p class="full-span">{{ form.address.label_tag }}{{ form.address }}{{ form.address.errors }}</p>
+    </div>
+
+    <section class="calc-summary">
+      <div class="section-head">
+        <h2>Annual Property History</h2>
+        <span class="value-scope-badge full" tabindex="0" data-tooltip="Amounts are total property values before ownership-share calculation.">Showing full property values</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th>Expected Rent</th>
+              <th>Property Value</th>
+              <th>Non-Recoverable Costs</th>
+              <th>Vacancy / Loss</th>
+              <th>Manual Rent Correction (+/-)</th>
+              <th>Estimated NOI</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in form.rows %}
+              <tr>
+                <td>{{ row.year }}</td>
+                <td>{{ row.annual_rent|eur }}</td>
+                <td class="history-money-cell">{{ row.property_value }}{{ row.property_value.errors }}</td>
+                <td class="history-money-cell">{{ row.non_recoverable_costs }}{{ row.non_recoverable_costs.errors }}</td>
+                <td class="history-money-cell">{{ row.vacancy_loss }}{{ row.vacancy_loss.errors }}</td>
+                <td class="history-money-cell">{{ row.manual_rent_adjustment }}{{ row.manual_rent_adjustment.errors }}</td>
+                <td>{{ row.estimated_noi|eur }}</td>
+                <td class="history-notes-cell">{{ row.notes }}{{ row.notes.errors }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="8">Enter an acquisition date and save once to build the yearly history table.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <details class="advanced-fields">
+      <summary>Advanced fields</summary>
+      <div class="form-grid">
+        <p class="full-span">{{ form.notes.label_tag }}{{ form.notes }}{{ form.notes.errors }}</p>
+      </div>
+    </details>
+
+    <div class="actions">
+      <button type="submit">Save</button>
+      {% if property %}
+        <a class="button secondary" href="{% url 'property_detail' property.pk %}">Cancel</a>
+      {% else %}
+        <a class="button secondary" href="{% url 'property_list' %}">Cancel</a>
+      {% endif %}
+    </div>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,189 @@
+{% extends "portfolio/base.html" %}
+{% load portfolio_format %}
+{% block title %}Optimize Scenario · {{ deal.name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Optimize Scenario</h1>
+    <p>{{ deal.name }} · Find the highest annual_owner_roi inside your financing constraints.</p>
+  </div>
+  <div class="actions">
+    <a class="button secondary" href="{% url 'potential_deal_detail' deal.pk %}{% if selected_scenario %}?scenario={{ selected_scenario.pk }}{% endif %}">Back to Deal</a>
+  </div>
+</div>
+
+<form method="post" class="optimizer-layout">
+  {% csrf_token %}
+  <section class="form-panel optimizer-form">
+    <div class="section-head">
+      <div>
+        <h2>Optimizer Inputs</h2>
+        <p class="muted">All deal and loan amounts are full-property unless the field says cash invested. The result uses your ownership share.</p>
+      </div>
+      <span class="value-scope-badge full" tabindex="0" data-tooltip="Amounts are total property values before ownership-share calculation.">Showing full property values</span>
+    </div>
+
+    <div class="form-grid two-col-form">
+      <div class="field-group">
+        {{ form.maximum_cash_out.label_tag }}
+        {{ form.maximum_cash_out }}
+        {% if form.maximum_cash_out.help_text %}<small>{{ form.maximum_cash_out.help_text }}</small>{% endif %}
+        {% for error in form.maximum_cash_out.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+      <div class="field-group">
+        {{ form.fixed_buying_costs.label_tag }}
+        {{ form.fixed_buying_costs }}
+        {% if form.fixed_buying_costs.help_text %}<small>{{ form.fixed_buying_costs.help_text }}</small>{% endif %}
+        {% for error in form.fixed_buying_costs.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+      <div class="field-group">
+        {{ form.maximum_financing_percent.label_tag }}
+        {{ form.maximum_financing_percent }}
+        {% if form.maximum_financing_percent.help_text %}<small>{{ form.maximum_financing_percent.help_text }}</small>{% endif %}
+        {% for error in form.maximum_financing_percent.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+      <div class="field-group">
+        {{ form.maximum_monthly_payment.label_tag }}
+        <div class="input-action">
+          {{ form.maximum_monthly_payment }}
+          <button type="button" class="button secondary compact-button" data-fill-input="id_maximum_monthly_payment" data-fill-value="{{ deal.expected_monthly_cold_rent }}">Use cold rent</button>
+        </div>
+        {% if form.maximum_monthly_payment.help_text %}<small>{{ form.maximum_monthly_payment.help_text }}</small>{% endif %}
+        {% for error in form.maximum_monthly_payment.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+    </div>
+
+    <h3>Interest Rate Anchors</h3>
+    <p class="muted">Enter at least one rate as a percentage. Empty anchors are generated from the usual financing spread: 80% is about 0.60 percentage points below 100%, 60% about 1.05 points below, and 40% about 1.15 points below. Rates between anchors are interpolated for tested financing ratios.</p>
+    <div class="form-grid four-col-form">
+      <div class="field-group">
+        {{ form.rate_100.label_tag }}
+        {{ form.rate_100 }}
+        {% for error in form.rate_100.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+      <div class="field-group">
+        {{ form.rate_80.label_tag }}
+        {{ form.rate_80 }}
+        {% for error in form.rate_80.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+      <div class="field-group">
+        {{ form.rate_60.label_tag }}
+        {{ form.rate_60 }}
+        {% for error in form.rate_60.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+      <div class="field-group">
+        {{ form.rate_40.label_tag }}
+        {{ form.rate_40 }}
+        {% for error in form.rate_40.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+    </div>
+
+    {% if result %}
+      <div class="generated-rate-summary">
+        <strong>Rates used</strong>
+        <span>100% {{ result.rate_100|pct }}{% if "rate_100" in generated_rate_fields %} generated{% endif %}</span>
+        <span>80% {{ result.rate_80|pct }}{% if "rate_80" in generated_rate_fields %} generated{% endif %}</span>
+        <span>60% {{ result.rate_60|pct }}{% if "rate_60" in generated_rate_fields %} generated{% endif %}</span>
+        <span>40% {{ result.rate_40|pct }}{% if "rate_40" in generated_rate_fields %} generated{% endif %}</span>
+      </div>
+    {% endif %}
+
+    {% if form.non_field_errors %}
+      {% for error in form.non_field_errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+    {% endif %}
+
+    <div class="actions">
+      <button type="submit" name="action" value="optimize">Optimize</button>
+      <a class="button secondary" href="{% url 'potential_deal_detail' deal.pk %}{% if selected_scenario %}?scenario={{ selected_scenario.pk }}{% endif %}">Cancel</a>
+    </div>
+  </section>
+
+  {% if result %}
+    <section class="panel optimizer-result">
+      <div class="section-head">
+        <div>
+          <h2>Optimized Result</h2>
+          <p class="muted">Winner is ranked by highest annual_owner_roi, then payment headroom, then lower debt.</p>
+        </div>
+        <div class="scope-badge-row">
+          <span class="value-scope-badge share" tabindex="0" data-tooltip="Amounts are multiplied by the relevant ownership share.">Showing your share</span>
+          <span class="value-scope-badge full" tabindex="0" data-tooltip="Amounts are total property values before ownership-share calculation.">Showing full property values</span>
+        </div>
+      </div>
+
+      {% if result.winner %}
+        <div class="optimizer-winner">
+          <div class="optimizer-winner-main">
+            <span>Highest annual_owner_roi setup</span>
+            <strong>{{ result.winner.financing_ratio }}% financing</strong>
+            <p>{{ result.winner.annual_owner_roi|pct }} Annual Owner ROI · {{ result.winner.annual_cashflow|eur }} cashflow</p>
+          </div>
+          <div class="kpi-grid compact-kpi-grid">
+            <div class="kpi"><span>Loan Amount</span><strong>{{ result.winner.loan_amount|eur }}</strong></div>
+            <div class="kpi"><span>Your Cash Invested</span><strong>{{ result.winner.cash_out|eur }}</strong></div>
+            <div class="kpi"><span>Interest Rate</span><strong>{{ result.winner.interest_rate|pct }}</strong></div>
+            <div class="kpi"><span>Monthly Payment</span><strong>{{ result.maximum_monthly_payment|eur }}</strong></div>
+            <div class="kpi"><span>Debt</span><strong>{{ result.winner.owner_debt|eur }}</strong></div>
+            <div class="kpi"><span>Payment Headroom</span><strong>{{ result.winner.payment_headroom|eur }}</strong></div>
+          </div>
+        </div>
+
+        <div class="save-optimizer-box">
+          <div class="field-group">
+            {{ form.scenario_name.label_tag }}
+            {{ form.scenario_name }}
+            {% for error in form.scenario_name.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+          </div>
+          <button type="submit" name="action" value="save">Save as Scenario</button>
+        </div>
+      {% else %}
+        <p>No feasible setup matched the cash invested and payment constraints. Increase the caps or adjust the interest-rate anchors.</p>
+      {% endif %}
+
+      <h3>Tested Options</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Financing</th>
+              <th>Loan</th>
+              <th>Your Cash Invested</th>
+              <th>Rate</th>
+              <th>Monthly Interest</th>
+              <th>Headroom</th>
+              <th>Cashflow</th>
+              <th>ROI</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for option in result.options %}
+              <tr {% if result.winner and option.financing_ratio == result.winner.financing_ratio %}class="highlight-row"{% endif %}>
+                <td>{{ option.financing_ratio }}%</td>
+                <td>{{ option.loan_amount|eur }}</td>
+                <td>{{ option.cash_out|eur }}</td>
+                <td>{{ option.interest_rate|pct }}</td>
+                <td>{{ option.monthly_interest_cost|eur }}</td>
+                <td>{{ option.payment_headroom|eur }}</td>
+                <td>{{ option.annual_cashflow|eur }}</td>
+                <td>{{ option.annual_owner_roi|pct }}</td>
+                <td><span class="status-pill {% if option.is_feasible %}success{% endif %}">{{ option.reason }}</span></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% endif %}
+</form>
+<script>
+  document.querySelectorAll("[data-fill-input]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const input = document.getElementById(button.dataset.fillInput);
+      if (!input) return;
+      input.value = Number(button.dataset.fillValue || 0).toFixed(2);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  });
+</script>
+{% endblock %}

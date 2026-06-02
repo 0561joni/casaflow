@@ -1,0 +1,45 @@
+{% extends "portfolio/base.html" %}
+{% block title %}Reference{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Reference</h1>
+    <p>CasaFlow workflow, naming conventions, formulas, and financial logic.</p>
+  </div>
+</div>
+
+<section class="panel reference-panel">
+  <div class="reference-mindmap" aria-label="CasaFlow Modes mind map">
+    <div class="mindmap-root">CasaFlow Modes</div>
+    <div class="mindmap-branch tracking">
+      <h2>Portfolio Tracking</h2>
+      <ul class="mindmap-items">
+        <li>Existing properties</li>
+        <li>Existing loans</li>
+        <li>Current tenants</li>
+      </ul>
+    </div>
+    <div class="mindmap-branch analysis">
+      <h2>Portfolio Analysis</h2>
+      <ul class="mindmap-items">
+        <li>KPIs</li>
+        <li>Charts</li>
+        <li>ROI</li>
+        <li>Cashflow</li>
+      </ul>
+    </div>
+    <div class="mindmap-branch decisions">
+      <h2>Portfolio Decisions</h2>
+      <ul class="mindmap-items">
+        <li>Deals</li>
+        <li>Financing scenarios</li>
+        <li>Portfolio impact</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="reference-content">
+    {{ reference_html }}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "portfolio/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<section class="form-panel">
+  <h1>{{ title }}</h1>
+  <p>The previous open rent period for this lease will close automatically on the day before the new rent starts.</p>
+  <form method="post" class="form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% if form.errors %}
+      <div class="error-summary"><strong>Save failed.</strong>{{ form.errors }}</div>
+    {% endif %}
+    {{ form.as_p }}
+    <div class="actions"><button type="submit">Save</button><a class="button secondary" href="{{ cancel_url }}">Cancel</a></div>
+  </form>
+</section>
+{% endblock %}

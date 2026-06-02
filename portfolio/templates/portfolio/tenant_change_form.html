@@ -1,0 +1,29 @@
+{% extends "portfolio/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<section class="form-panel wide-form-panel">
+  <h1>{{ title }}</h1>
+  <p>The current lease will end automatically on the day before the new lease starts.</p>
+  <form method="post" class="form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% if form.errors %}
+      <div class="error-summary"><strong>Save failed.</strong>{{ form.errors }}</div>
+    {% endif %}
+    <div class="form-grid">
+      <p>{{ form.tenant_mode.label_tag }}{{ form.tenant_mode }}{{ form.tenant_mode.errors }}</p>
+      <p>{{ form.existing_tenant.label_tag }}{{ form.existing_tenant }}{{ form.existing_tenant.errors }}</p>
+      <p>{{ form.first_name.label_tag }}{{ form.first_name }}{{ form.first_name.errors }}</p>
+      <p>{{ form.last_name.label_tag }}{{ form.last_name }}{{ form.last_name.errors }}</p>
+      <p>{{ form.email.label_tag }}{{ form.email }}{{ form.email.errors }}</p>
+      <p>{{ form.phone.label_tag }}{{ form.phone }}{{ form.phone.errors }}</p>
+      <p class="full-span">{{ form.tenant_notes.label_tag }}{{ form.tenant_notes }}{{ form.tenant_notes.errors }}</p>
+      <p>{{ form.lease_start_date.label_tag }}{{ form.lease_start_date }}<span class="helptext">{{ form.lease_start_date.help_text }}</span>{{ form.lease_start_date.errors }}</p>
+      <p>{{ form.cold_rent.label_tag }}{{ form.cold_rent }}<span class="helptext">{{ form.cold_rent.help_text }}</span>{{ form.cold_rent.errors }}</p>
+      <p>{{ form.utility_prepayment.label_tag }}{{ form.utility_prepayment }}{{ form.utility_prepayment.errors }}</p>
+      <p>{{ form.total_rent.label_tag }}{{ form.total_rent }}<span class="helptext">{{ form.total_rent.help_text }}</span>{{ form.total_rent.errors }}</p>
+    </div>
+    <div class="actions"><button type="submit">Save</button><a class="button secondary" href="{{ cancel_url }}">Cancel</a></div>
+  </form>
+</section>
+{% endblock %}

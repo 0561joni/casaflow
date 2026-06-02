@@ -1,0 +1,50 @@
+{% extends "portfolio/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<section class="form-panel wide-form-panel">
+  <h1>{{ title }}</h1>
+  <p>Create a deal and its first financing scenario in one step.</p>
+  <div class="scope-badge-row">
+    <span class="value-scope-badge full" tabindex="0" data-tooltip="Amounts are total property values before ownership-share calculation.">Showing full property values</span>
+  </div>
+  <form method="post" class="form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% if form.errors %}
+      <div class="error-summary"><strong>Save failed.</strong>{{ form.errors }}</div>
+    {% endif %}
+
+    <section class="calc-summary">
+      <h2>Deal basics</h2>
+      <div class="form-grid">
+        <p>{{ form.name.label_tag }}{{ form.name }}{{ form.name.errors }}</p>
+        <p>{{ form.purchase_price.label_tag }}{{ form.purchase_price }}<span class="helptext">{{ form.purchase_price.help_text }}</span>{{ form.purchase_price.errors }}</p>
+        <p>{{ form.expected_monthly_cold_rent.label_tag }}{{ form.expected_monthly_cold_rent }}<span class="helptext">{{ form.expected_monthly_cold_rent.help_text }}</span>{{ form.expected_monthly_cold_rent.errors }}</p>
+        <p>{{ form.owner_cash_out.label_tag }}{{ form.owner_cash_out }}<span class="helptext">{{ form.owner_cash_out.help_text }}</span>{{ form.owner_cash_out.errors }}</p>
+        <p>{{ form.loan_amount.label_tag }}{{ form.loan_amount }}<span class="helptext">{{ form.loan_amount.help_text }}</span>{{ form.loan_amount.errors }}</p>
+        <p>{{ form.interest_rate.label_tag }}{{ form.interest_rate }}<span class="helptext">{{ form.interest_rate.help_text }}</span>{{ form.interest_rate.errors }}</p>
+        <p>{{ form.monthly_payment.label_tag }}{{ form.monthly_payment }}<span class="helptext">{{ form.monthly_payment.help_text }}</span>{{ form.monthly_payment.errors }}</p>
+      </div>
+    </section>
+
+    <details class="detail-panel advanced-fields">
+      <summary>Advanced deal assumptions</summary>
+      <div class="form-grid">
+        <p>{{ form.expected_monthly_utility_prepayment.label_tag }}{{ form.expected_monthly_utility_prepayment }}<span class="helptext">{{ form.expected_monthly_utility_prepayment.help_text }}</span>{{ form.expected_monthly_utility_prepayment.errors }}</p>
+        <p>{{ form.yearly_non_recoverable_costs.label_tag }}{{ form.yearly_non_recoverable_costs }}<span class="helptext">{{ form.yearly_non_recoverable_costs.help_text }}</span>{{ form.yearly_non_recoverable_costs.errors }}</p>
+        <p>{{ form.ownership_share.label_tag }}{{ form.ownership_share }}<span class="helptext">{{ form.ownership_share.help_text }}</span>{{ form.ownership_share.errors }}</p>
+        <p>{{ form.buying_costs.label_tag }}{{ form.buying_costs }}<span class="helptext">{{ form.buying_costs.help_text }}</span>{{ form.buying_costs.errors }}</p>
+        <p>{{ form.minimum_dscr.label_tag }}{{ form.minimum_dscr }}<span class="helptext">{{ form.minimum_dscr.help_text }}</span>{{ form.minimum_dscr.errors }}</p>
+        <p>{{ form.maximum_ltv.label_tag }}{{ form.maximum_ltv }}<span class="helptext">{{ form.maximum_ltv.help_text }}</span>{{ form.maximum_ltv.errors }}</p>
+        <p class="full-span">{{ form.notes.label_tag }}{{ form.notes }}{{ form.notes.errors }}</p>
+      </div>
+      <p class="muted">Use the Financing Optimizer after saving when you want to test multiple financing ratios and rate assumptions.</p>
+    </details>
+
+    <div class="actions">
+      <button type="submit">Save</button>
+      <a class="button secondary" href="{% url 'potential_deal_list' %}">Cancel</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

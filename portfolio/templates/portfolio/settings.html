@@ -1,0 +1,113 @@
+{% extends "portfolio/base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Settings</h1>
+    <p>App configuration and local storage paths.</p>
+  </div>
+</div>
+
+<section class="panel">
+  <div class="section-head">
+    <div>
+      <h2>App Settings</h2>
+      <p class="muted">Shared settings for optional dashboard tax estimates and local app paths.</p>
+    </div>
+  </div>
+  <form method="post" class="form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <div class="section-head form-section-head">
+      <div>
+        <h2>Language</h2>
+        <p class="muted">Choose the language used for the app interface.</p>
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="field-group">
+        {{ form.language_code.label_tag }}
+        {{ form.language_code }}
+        {% if form.language_code.help_text %}<small>{{ form.language_code.help_text }}</small>{% endif %}
+        {% for error in form.language_code.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+    </div>
+    <div class="section-head form-section-head">
+      <div>
+        <h2>Tax Settings</h2>
+        <p class="muted">Used only for the Dashboard after-tax estimate. This is not formal tax accounting.</p>
+      </div>
+    </div>
+    <div class="form-grid">
+      <label class="checkbox-field">
+        {{ form.tax_calculations_enabled }}
+        <span>
+          {{ form.tax_calculations_enabled.label }}
+          {% if form.tax_calculations_enabled.help_text %}<small>{{ form.tax_calculations_enabled.help_text }}</small>{% endif %}
+        </span>
+      </label>
+    </div>
+    {% if show_tax_details %}
+      <div class="form-grid">
+      <div class="field-group">
+        {{ form.effective_tax_rate.label_tag }}
+        {{ form.effective_tax_rate }}
+        {% if form.effective_tax_rate.help_text %}<small>{{ form.effective_tax_rate.help_text }}</small>{% endif %}
+        {% for error in form.effective_tax_rate.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+      <label class="checkbox-field">
+        {{ form.tax_loss_benefit_enabled }}
+        <span>
+          {{ form.tax_loss_benefit_enabled.label }}
+          {% if form.tax_loss_benefit_enabled.help_text %}<small>{{ form.tax_loss_benefit_enabled.help_text }}</small>{% endif %}
+        </span>
+      </label>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th>Tax-deductible costs</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in tax_form.rows %}
+              <tr>
+                <td>{{ row.year }}</td>
+                <td>
+                  {{ row.costs }}
+                  {% for error in row.costs.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                </td>
+                <td>
+                  {{ row.notes }}
+                  {% for error in row.notes.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="3">No dashboard years yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="muted">Yearly deductible costs are your-share, tax-only deductions. They reduce taxable result but do not reduce pre-tax Cashflow.</p>
+    {% endif %}
+    <div class="form-actions">
+      <button type="submit">Save Settings</button>
+    </div>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>Local App Paths</h2>
+  <dl class="detail-list">
+    <dt>Database</dt>
+    <dd><code>{{ database_path }}</code></dd>
+    <dt>Media</dt>
+    <dd><code>{{ media_root }}</code></dd>
+    <dt>Backups</dt>
+    <dd><code>{{ backup_dir }}</code></dd>
+  </dl>
+</section>
+{% endblock %}

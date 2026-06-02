@@ -1,0 +1,93 @@
+{% extends "portfolio/base.html" %}
+{% load portfolio_format %}
+{% block title %}Loans{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Loans</h1>
+    <p>Your-share loan cost, amortization, and balances for {{ selected_year }}. Edit forms store full-property loan amounts.</p>
+    <div class="scope-badge-row">
+      <span class="value-scope-badge share" tabindex="0" data-tooltip="Amounts are multiplied by the relevant ownership share.">Showing your share</span>
+    </div>
+  </div>
+  <div class="actions">
+    <form method="get" class="inline-form" id="loan-year-form">
+      <select name="year">
+        {% for year in years %}
+          <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
+        {% endfor %}
+      </select>
+    </form>
+    <a class="button" href="{% url 'loan_create' %}?year={{ selected_year }}">Add Loan</a>
+  </div>
+</div>
+
+<section class="kpi-grid primary-kpis">
+  <div class="kpi"><span tabindex="0" data-tooltip="Your Current Debt = current loan balance × ownership share. If no month-by-month balance exists, the app approximates within the selected year from opening debt to closing debt. Past years use closing debt; future years use opening debt.">Your Current Debt</span><strong>{{ totals.current_debt|eur }}</strong></div>
+  <div class="kpi"><span tabindex="0" data-tooltip="Effective Interest Rate = interest paid / opening debt. Uses your ownership-share values.">Effective Interest Rate</span><strong>{{ totals.effective_interest_rate|pct }}</strong></div>
+  <div class="kpi"><span tabindex="0" data-tooltip="Your Interest Cost = sum of annual interest paid × ownership share. This is the financing cost portion of debt service.">Your Interest Cost</span><strong>{{ totals.interest_paid|eur }}</strong></div>
+  <div class="kpi"><span tabindex="0" data-tooltip="Your Principal Paid = principal repayment during the selected year × ownership share. This reduces debt and counts as equity build in ROI.">Your Principal Paid</span><strong>{{ totals.principal_paid|eur }}</strong></div>
+  <div class="kpi"><span tabindex="0" data-tooltip="Your Debt Service = interest paid + principal paid, or monthly payment × active months when calculated from loan settings. Values use ownership share.">Your Debt Service</span><strong>{{ totals.debt_service|eur }}</strong></div>
+  <div class="kpi"><span tabindex="0" data-tooltip="Amortization Rate = principal paid / opening debt. Uses your ownership-share values.">Amortization Rate</span><strong>{{ totals.amortization_rate|pct }}</strong></div>
+</section>
+
+<section class="panel">
+  <div class="section-head">
+    <h2>Loan Performance</h2>
+  </div>
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th tabindex="0" data-tooltip="Loan name. Click it to edit the loan and yearly closing balances.">Loan</th>
+        <th tabindex="0" data-tooltip="Property connected to this loan.">Property</th>
+        <th tabindex="0" data-tooltip="Total Original Loan = full-property starting loan value. Inputs are stored as full-property totals.">Total Original Loan</th>
+        <th tabindex="0" data-tooltip="Effective Interest Rate = interest paid / opening debt for the selected year. Uses your ownership-share values.">Effective Interest Rate</th>
+        <th tabindex="0" data-tooltip="Your Current Debt = current balance × ownership share. If no monthly balances exist, this is approximated from opening and closing balances for the selected year.">Your Current Debt</th>
+        <th tabindex="0" data-tooltip="Your Interest Paid = calculated annual interest × property ownership share. Formula: debt service - principal paid.">Your Interest Paid</th>
+        <th tabindex="0" data-tooltip="Your Principal Paid = opening balance - entered closing balance, multiplied by ownership share.">Your Principal Paid</th>
+        <th tabindex="0" data-tooltip="Your Debt Service = scheduled payments plus extra repayment, multiplied by ownership share.">Your Debt Service</th>
+        <th tabindex="0" data-tooltip="Interest Share = interest paid / debt service. Shows how much of the payment is financing cost.">Interest Share</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+        <tr>
+          <td><a href="{% url 'loan_update' row.loan.pk %}?year={{ selected_year }}">{{ row.loan.name }}</a></td>
+          <td>{{ row.loan.property.name }}</td>
+          <td>{{ row.loan.original_amount|eur }}</td>
+          <td>{{ row.effective_interest_rate|pct }}</td>
+          <td>{{ row.current_debt|eur }}</td>
+          <td>{{ row.interest_paid|eur }}</td>
+          <td>{{ row.principal_paid|eur }}</td>
+          <td>{{ row.debt_service|eur }}</td>
+          <td>{{ row.interest_share_of_payment|pct }}</td>
+          <td class="cell-actions">
+            <a href="{% url 'loan_update' row.loan.pk %}?year={{ selected_year }}">Edit</a>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="10">No loan snapshots for {{ selected_year }} yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+{% if loans_without_snapshot %}
+<section class="panel">
+  <h2>Loans Missing a {{ selected_year }} Snapshot</h2>
+  <ul class="list">
+    {% for loan in loans_without_snapshot %}
+      <li>{{ loan.name }} · {{ loan.property.name }} · <a href="{% url 'loan_update' loan.pk %}?year={{ selected_year }}">Add Year</a></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+<script>
+  document.querySelector("#loan-year-form select")?.addEventListener("change", (event) => {
+    event.target.form.submit();
+  });
+</script>
+{% endblock %}

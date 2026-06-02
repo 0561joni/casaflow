@@ -1,0 +1,164 @@
+{% extends "portfolio/base.html" %}
+{% load portfolio_format %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<section class="form-panel">
+  <h1>{{ title }}</h1>
+  <p>Enter full-property loan amounts. The app calculates your ownership-share KPIs automatically.</p>
+  <div class="scope-badge-row">
+    <span class="value-scope-badge full" tabindex="0" data-tooltip="Amounts are total property values before ownership-share calculation.">Showing full property values</span>
+  </div>
+  <form method="post" class="form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% if form.errors %}
+      <div class="error-summary">
+        <strong>Save failed.</strong>
+        {{ form.errors }}
+      </div>
+    {% endif %}
+    {{ form.selected_year }}
+    <div class="form-grid">
+      <p>{{ form.property.label_tag }}{{ form.property }}{{ form.property.errors }}</p>
+      <p>{{ form.name.label_tag }}{{ form.name }}{{ form.name.errors }}</p>
+      <p>{{ form.original_amount.label_tag }}{{ form.original_amount }}<span class="helptext">{{ form.original_amount.help_text }}</span>{{ form.original_amount.errors }}</p>
+      <p>{{ form.start_date.label_tag }}{{ form.start_date }}<span class="helptext">{{ form.start_date.help_text }}</span>{{ form.start_date.errors }}</p>
+      <p>{{ form.default_interest_rate.label_tag }}{{ form.default_interest_rate }}<span class="helptext">{{ form.default_interest_rate.help_text }}</span>{{ form.default_interest_rate.errors }}</p>
+      <p>{{ form.default_monthly_payment.label_tag }}{{ form.default_monthly_payment }}<span class="helptext">{{ form.default_monthly_payment.help_text }}</span>{{ form.default_monthly_payment.errors }}</p>
+    </div>
+
+    <section class="calc-summary">
+      <div class="section-head">
+        <h2>Annual Closing Balances</h2>
+        <span class="value-scope-badge full" tabindex="0" data-tooltip="Amounts are total property values before ownership-share calculation.">Showing full property values</span>
+      </div>
+      <div class="table-wrap">
+        <table id="loan-balance-table">
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th>Active Months</th>
+              <th>Opening Balance</th>
+              <th>Expected Closing</th>
+              <th>Entered Closing</th>
+              <th>Extra / Variance</th>
+              <th>Interest</th>
+              <th>Principal</th>
+              <th>Debt Service</th>
+              <th>Your Closing Debt</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in form.rows %}
+              <tr class="loan-balance-row{% if row.variance %} warning-row{% endif %}" data-active-months="{{ row.active_months }}" data-owner-share="{{ row.owner_share }}">
+                <td>{{ row.year }}</td>
+                <td class="active-months-cell">{{ row.active_months }}</td>
+                <td class="opening-balance-cell">{{ row.opening_balance|eur }}</td>
+                <td class="expected-closing-cell">{{ row.expected_closing_balance|eur }}</td>
+                <td class="closing-balance-cell">{{ row.field }}{{ row.field.errors }}</td>
+                <td class="variance-cell">
+                  {% if row.extra_repayment %}
+                    Extra {{ row.extra_repayment|eur }}
+                  {% elif row.variance %}
+                    Variance {{ row.variance|eur }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td class="interest-cell">{{ row.interest_paid|eur }}</td>
+                <td class="principal-cell">{{ row.principal_paid|eur }}</td>
+                <td class="debt-service-cell">{{ row.debt_service|eur }}</td>
+                <td class="owner-closing-cell">{{ row.owner_closing_balance|eur }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="10">Enter a starting date and save once to build the yearly balance table.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <details class="advanced-fields">
+      <summary>Advanced fields</summary>
+      <div class="form-grid">
+        <p>{{ form.lender.label_tag }}{{ form.lender }}{{ form.lender.errors }}</p>
+        <p>{{ form.maturity_date.label_tag }}{{ form.maturity_date }}<span class="helptext">{{ form.maturity_date.help_text }}</span>{{ form.maturity_date.errors }}</p>
+        <p>{{ form.rate_reset_date.label_tag }}{{ form.rate_reset_date }}<span class="helptext">{{ form.rate_reset_date.help_text }}</span>{{ form.rate_reset_date.errors }}</p>
+        <p class="full-span">{{ form.notes.label_tag }}{{ form.notes }}{{ form.notes.errors }}</p>
+      </div>
+    </details>
+
+    <div class="actions"><button type="submit">Save</button><a class="button secondary" href="{% url 'loan_list' %}?year={{ selected_year }}">Cancel</a></div>
+  </form>
+</section>
+<script>
+  (() => {
+    const table = document.getElementById("loan-balance-table");
+    if (!table) return;
+
+    const originalInput = document.getElementById("id_original_amount");
+    const rateInput = document.getElementById("id_default_interest_rate");
+    const paymentInput = document.getElementById("id_default_monthly_payment");
+    const currencyFormatter = new Intl.NumberFormat("en-US", { style: "currency", currency: "EUR" });
+
+    function decimalFromInput(input) {
+      const value = Number.parseFloat(input?.value || "0");
+      return Number.isFinite(value) ? value : 0;
+    }
+
+    function money(value) {
+      return Math.round((value + Number.EPSILON) * 100) / 100;
+    }
+
+    function formatEuro(value) {
+      return currencyFormatter.format(money(value));
+    }
+
+    function expectedClosing(opening, annualRate, monthlyPayment, activeMonths) {
+      let balance = money(opening);
+      const monthlyRate = annualRate / 12;
+      for (let index = 0; index < activeMonths; index += 1) {
+        const interest = money(balance * monthlyRate);
+        const principal = money(monthlyPayment - interest);
+        balance = money(balance - principal);
+      }
+      return Math.max(balance, 0);
+    }
+
+    function updateRows() {
+      let opening = decimalFromInput(originalInput);
+      const annualRate = decimalFromInput(rateInput);
+      const monthlyPayment = decimalFromInput(paymentInput);
+
+      table.querySelectorAll(".loan-balance-row").forEach((row) => {
+        const activeMonths = Number.parseInt(row.dataset.activeMonths || "0", 10);
+        const ownerShare = decimalFromInput({ value: row.dataset.ownerShare });
+        const closingInput = row.querySelector(".closing-balance-cell input");
+        const closing = decimalFromInput(closingInput);
+        const expected = expectedClosing(opening, annualRate, monthlyPayment, activeMonths);
+        const extraRepayment = money(Math.max(expected - closing, 0));
+        const variance = money(Math.max(closing - expected, 0));
+        const scheduledPayments = money(monthlyPayment * activeMonths);
+        const debtService = money(scheduledPayments + extraRepayment);
+        const principal = money(opening - closing);
+        const interest = money(debtService - principal);
+
+        row.querySelector(".opening-balance-cell").textContent = formatEuro(opening);
+        row.querySelector(".expected-closing-cell").textContent = formatEuro(expected);
+        row.querySelector(".variance-cell").textContent = extraRepayment > 0 ? `Extra ${formatEuro(extraRepayment)}` : variance > 0 ? `Variance ${formatEuro(variance)}` : "-";
+        row.querySelector(".interest-cell").textContent = formatEuro(interest);
+        row.querySelector(".principal-cell").textContent = formatEuro(principal);
+        row.querySelector(".debt-service-cell").textContent = formatEuro(debtService);
+        row.querySelector(".owner-closing-cell").textContent = formatEuro(closing * ownerShare);
+        row.classList.toggle("warning-row", variance > 0);
+        opening = closing;
+      });
+    }
+
+    table.addEventListener("input", (event) => {
+      if (event.target.closest(".closing-balance-cell")) updateRows();
+    });
+    [originalInput, rateInput, paymentInput].forEach((input) => input?.addEventListener("input", updateRows));
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "portfolio/base.html" %}
+{% load static %}
+{% block title %}CasaFlow Login{% endblock %}
+{% block content %}
+<section class="auth-panel">
+  <img class="login-logo" src="{% static 'portfolio/img/casaflow-logo.png' %}" alt="CasaFlow">
+  <h1>Login</h1>
+  <form method="post" class="form">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Login</button>
+  </form>
+</section>
+{% endblock %}

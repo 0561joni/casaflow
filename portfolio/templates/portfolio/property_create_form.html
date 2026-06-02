@@ -1,0 +1,49 @@
+{% extends "portfolio/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<section class="form-panel wide-form-panel">
+  <h1>{{ title }}</h1>
+  <p>Create the property with the minimum financial data first. Lower-frequency details are available below.</p>
+  <div class="scope-badge-row">
+    <span class="value-scope-badge full" tabindex="0" data-tooltip="Amounts are total property values before ownership-share calculation.">Showing full property values</span>
+  </div>
+  <form method="post" enctype="multipart/form-data" class="form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% if form.errors %}
+      <div class="error-summary"><strong>Save failed.</strong>{{ form.errors }}</div>
+    {% endif %}
+
+    <section class="calc-summary">
+      <h2>Property basics</h2>
+      <div class="form-grid">
+        <p>{{ form.name.label_tag }}{{ form.name }}{{ form.name.errors }}</p>
+        <p>{{ form.object_type.label_tag }}{{ form.object_type }}{{ form.object_type.errors }}</p>
+        <p class="full-span">{{ form.street_address.label_tag }}{{ form.street_address }}{{ form.street_address.errors }}</p>
+        <p>{{ form.postal_code.label_tag }}{{ form.postal_code }}{{ form.postal_code.errors }}</p>
+        <p>{{ form.city.label_tag }}{{ form.city }}{{ form.city.errors }}</p>
+        <p>{{ form.ownership_share.label_tag }}{{ form.ownership_share }}<span class="helptext">{{ form.ownership_share.help_text }}</span>{{ form.ownership_share.errors }}</p>
+        <p>{{ form.purchase_price.label_tag }}{{ form.purchase_price }}<span class="helptext">{{ form.purchase_price.help_text }}</span>{{ form.purchase_price.errors }}</p>
+        <p>{{ form.cash_invested_at_purchase.label_tag }}{{ form.cash_invested_at_purchase }}<span class="helptext">{{ form.cash_invested_at_purchase.help_text }}</span>{{ form.cash_invested_at_purchase.errors }}</p>
+        <p>{{ form.acquisition_date.label_tag }}{{ form.acquisition_date }}<span class="helptext">{{ form.acquisition_date.help_text }}</span>{{ form.acquisition_date.errors }}</p>
+      </div>
+    </section>
+
+    <details class="detail-panel advanced-fields">
+      <summary>Advanced property details</summary>
+      <div class="form-grid">
+        <p>{{ form.photo.label_tag }}{{ form.photo }}{{ form.photo.errors }}</p>
+        <p>{{ form.recurring_expense_amount.label_tag }}{{ form.recurring_expense_amount }}<span class="helptext">{{ form.recurring_expense_amount.help_text }}</span>{{ form.recurring_expense_amount.errors }}</p>
+        <p>{{ form.construction_year.label_tag }}{{ form.construction_year }}{{ form.construction_year.errors }}</p>
+        <p>{{ form.total_building_area_sqm.label_tag }}{{ form.total_building_area_sqm }}{{ form.total_building_area_sqm.errors }}</p>
+        <p class="full-span">{{ form.notes.label_tag }}{{ form.notes }}{{ form.notes.errors }}</p>
+      </div>
+    </details>
+
+    <div class="actions">
+      <button type="submit">Save</button>
+      <a class="button secondary" href="{% url 'property_list' %}">Cancel</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

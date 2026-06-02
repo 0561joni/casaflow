@@ -1,0 +1,48 @@
+{% extends "portfolio/base.html" %}
+{% load portfolio_format %}
+{% block title %}Properties{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Properties</h1>
+    <p>The main working area for property details, photos, units, tenants, rent history, loans, and admin info.</p>
+  </div>
+  <div class="actions">
+    <a class="button" href="{% url 'property_create' %}">Add Property</a>
+  </div>
+</div>
+
+<section class="property-grid">
+  {% for card in property_cards %}
+    <a class="property-card property-card-link" href="{% url 'property_detail' card.property.pk %}">
+      <div class="property-card-head">
+        <div class="property-card-thumb" aria-hidden="true">
+          {% if card.property.photo %}
+            <img src="{{ card.property.photo.url }}" alt="">
+          {% else %}
+            <span>No photo</span>
+          {% endif %}
+        </div>
+        <div>
+          <h2>{{ card.property.name }}</h2>
+          <p>{{ card.property.display_address|default:"No address stored" }}</p>
+        </div>
+        {% if card.vacant_units %}
+          <span class="status-pill warning">{{ card.vacant_units }} vacant</span>
+        {% endif %}
+      </div>
+      <div class="property-meta">
+        <span>{{ card.unit_count }} unit{{ card.unit_count|pluralize }}</span>
+        <span>{{ card.loan_count }} loan{{ card.loan_count|pluralize }}</span>
+        <span>{{ card.property.ownership_share|pct }} ownership</span>
+      </div>
+    </a>
+  {% empty %}
+    <section class="panel empty-state">
+      <h2>No properties yet</h2>
+      <p>Add a property to start managing details, photos, units, tenants, rent history, loans, and admin info.</p>
+      <a class="button" href="{% url 'property_create' %}">Add Property</a>
+    </section>
+  {% endfor %}
+</section>
+{% endblock %}

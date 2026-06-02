@@ -1,0 +1,72 @@
+{% extends "portfolio/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<section class="form-panel wide-form-panel">
+  <h1>{{ title }}</h1>
+  <p>Store informational administration data only. These fields do not affect rent, loans, ROI, or dashboard calculations.</p>
+  <form method="post" class="form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% if form.errors %}
+      <div class="error-summary"><strong>Save failed.</strong>{{ form.errors }}</div>
+    {% endif %}
+
+    <section class="calc-summary">
+      <h2>Unit Details</h2>
+      <div class="form-grid">
+        <p>{{ form.apartment_number.label_tag }}{{ form.apartment_number }}{{ form.apartment_number.errors }}</p>
+        <p>{{ form.cellar_number.label_tag }}{{ form.cellar_number }}{{ form.cellar_number.errors }}</p>
+        <p>{{ form.ownership_share_text.label_tag }}{{ form.ownership_share_text }}{{ form.ownership_share_text.errors }}</p>
+        <p>{{ form.monthly_house_fee.label_tag }}{{ form.monthly_house_fee }}{{ form.monthly_house_fee.errors }}</p>
+        <p class="full-span">{{ form.unit_admin_notes.label_tag }}{{ form.unit_admin_notes }}{{ form.unit_admin_notes.errors }}</p>
+      </div>
+    </section>
+
+    <section class="calc-summary">
+      <h2>Building</h2>
+      <div class="form-grid">
+        <p>{{ form.postal_code.label_tag }}{{ form.postal_code }}{{ form.postal_code.errors }}</p>
+        <p>{{ form.construction_year.label_tag }}{{ form.construction_year }}{{ form.construction_year.errors }}</p>
+        <p>{{ form.total_building_area_sqm.label_tag }}{{ form.total_building_area_sqm }}{{ form.total_building_area_sqm.errors }}</p>
+        <p class="full-span">{{ form.property_admin_notes.label_tag }}{{ form.property_admin_notes }}{{ form.property_admin_notes.errors }}</p>
+      </div>
+    </section>
+
+    <section class="calc-summary">
+      <h2>Land Registry</h2>
+      <div class="form-grid">
+        <p>{{ form.local_court.label_tag }}{{ form.local_court }}{{ form.local_court.errors }}</p>
+        <p>{{ form.land_register_district.label_tag }}{{ form.land_register_district }}{{ form.land_register_district.errors }}</p>
+        <p>{{ form.sheet_number.label_tag }}{{ form.sheet_number }}{{ form.sheet_number.errors }}</p>
+        <p>{{ form.cadastral_district.label_tag }}{{ form.cadastral_district }}{{ form.cadastral_district.errors }}</p>
+        <p>{{ form.plot_numbers.label_tag }}{{ form.plot_numbers }}{{ form.plot_numbers.errors }}</p>
+        <p class="full-span">{{ form.land_registry_notes.label_tag }}{{ form.land_registry_notes }}{{ form.land_registry_notes.errors }}</p>
+      </div>
+    </section>
+
+    <section class="calc-summary">
+      <h2>Technical Info</h2>
+      <div class="form-grid">
+        <p>{{ form.heating_type.label_tag }}{{ form.heating_type }}{{ form.heating_type.errors }}</p>
+        <p>{{ form.boiler_installation_info.label_tag }}{{ form.boiler_installation_info }}{{ form.boiler_installation_info.errors }}</p>
+        <p>{{ form.instant_water_heater_info.label_tag }}{{ form.instant_water_heater_info }}{{ form.instant_water_heater_info.errors }}</p>
+        <p class="full-span">{{ form.technical_notes.label_tag }}{{ form.technical_notes }}{{ form.technical_notes.errors }}</p>
+      </div>
+    </section>
+
+    <section class="calc-summary">
+      <h2>Contacts / Hausverwaltung</h2>
+      <div class="form-grid">
+        <p>{{ form.contact_mode.label_tag }}{{ form.contact_mode }}{{ form.contact_mode.errors }}</p>
+        <p>{{ form.existing_contact.label_tag }}{{ form.existing_contact }}{{ form.existing_contact.errors }}</p>
+        <p>{{ form.contact_name.label_tag }}{{ form.contact_name }}{{ form.contact_name.errors }}</p>
+        <p>{{ form.contact_email.label_tag }}{{ form.contact_email }}{{ form.contact_email.errors }}</p>
+        <p>{{ form.contact_phone.label_tag }}{{ form.contact_phone }}{{ form.contact_phone.errors }}</p>
+        <p class="full-span">{{ form.contact_notes.label_tag }}{{ form.contact_notes }}{{ form.contact_notes.errors }}</p>
+      </div>
+    </section>
+
+    <div class="actions"><button type="submit">Save</button><a class="button secondary" href="{{ cancel_url }}">Cancel</a></div>
+  </form>
+</section>
+{% endblock %}
