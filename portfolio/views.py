@@ -882,8 +882,9 @@ def unit_mietbescheinigung(request, pk):
                         "property": unit.property,
                     },
                 )
-                messages.success(request, f"Generated {file_name}. Open it from Recent Exports.")
-                return redirect("unit_detail", pk=unit.pk)
+                response = HttpResponse(pdf_bytes, content_type="application/pdf")
+                response["Content-Disposition"] = f'attachment; filename="{file_name}"'
+                return response
         else:
             messages.error(request, "Generation failed. Please check the highlighted fields.")
     else:

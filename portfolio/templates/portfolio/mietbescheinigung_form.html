@@ -105,12 +105,14 @@
   </details>
 
   <div class="actions">
-    <button type="submit" name="action" value="generate" {% if source_warnings %}disabled{% endif %}>Generate PDF</button>
+    <button type="submit" name="action" value="generate" data-generating-text="Creating PDF..." {% if source_warnings %}disabled{% endif %}>Generate PDF</button>
     <button type="submit" name="action" value="save_landlord" class="secondary">Save New Landlord</button>
     <a class="button secondary" href="{{ cancel_url }}">Cancel</a>
   </div>
+  <div class="download-feedback" data-download-feedback hidden aria-live="polite"></div>
 </form>
 <script>
+  const mietbescheinigungForm = document.querySelector(".mietbescheinigung-form");
   const templateSelect = document.getElementById("{{ form.template.id_for_label }}");
   const landlordSelect = document.getElementById("{{ form.landlord_profile.id_for_label }}");
   function reloadMietbescheinigungForm() {
@@ -129,6 +131,63 @@
     signatureInput.addEventListener("change", () => {
       if (signatureInput.files && signatureInput.files.length) {
         includeSignature.disabled = false;
+      }
+    });
+  }
+  function downloadFileName(response) {
+    const disposition = response.headers.get("Content-Disposition") || "";
+    const encodedMatch = disposition.match(/filename\\*=UTF-8''([^;]+)/i);
+    if (encodedMatch) return decodeURIComponent(encodedMatch[1].replace(/"/g, ""));
+    const match = disposition.match(/filename="?([^";]+)"?/i);
+    return match ? match[1] : "mietbescheinigung.pdf";
+  }
+  function setDownloadFeedback(message, state = "info") {
+    const feedback = document.querySelector("[data-download-feedback]");
+    if (!feedback) return;
+    feedback.hidden = false;
+    feedback.textContent = message;
+    feedback.className = `download-feedback ${state}`;
+  }
+  if (mietbescheinigungForm) {
+    mietbescheinigungForm.addEventListener("submit", async (event) => {
+      const submitter = event.submitter;
+      if (!submitter || submitter.value !== "generate") return;
+      event.preventDefault();
+      const originalText = submitter.textContent;
+      submitter.disabled = true;
+      submitter.textContent = submitter.dataset.generatingText || "Creating PDF...";
+      setDownloadFeedback("Creating PDF. The download will start automatically...", "info");
+      try {
+        const formData = new FormData(mietbescheinigungForm);
+        formData.set("action", "generate");
+        const response = await fetch(mietbescheinigungForm.action || window.location.href, {
+          method: "POST",
+          body: formData,
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+        });
+        const contentType = response.headers.get("Content-Type") || "";
+        if (response.ok && contentType.includes("application/pdf")) {
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = downloadFileName(response);
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+          setDownloadFeedback("PDF created and download started. It is also saved in Recent Exports.", "success");
+        } else {
+          const html = await response.text();
+          document.open();
+          document.write(html);
+          document.close();
+        }
+      } catch (error) {
+        setDownloadFeedback("PDF creation failed. Please try again.", "error");
+      } finally {
+        submitter.disabled = false;
+        submitter.textContent = originalText;
       }
     });
   }

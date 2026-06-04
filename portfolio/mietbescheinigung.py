@@ -67,10 +67,15 @@ def _fit_text(text: str, max_width: float, font_name: str = "Helvetica", size: i
 
 def _draw_text(c: canvas.Canvas, x: float, y: float, text: str, size: int = 9, max_width: float = 260, align: str = "left"):
     font_name = "Helvetica"
-    value = _fit_text(text, max_width, font_name, size)
+    value = " ".join(str(text or "").split())
+    fitted_size = size
+    while fitted_size > 6 and max_width and stringWidth(value, font_name, fitted_size) > max_width:
+        fitted_size -= 0.5
+    if max_width and stringWidth(value, font_name, fitted_size) > max_width:
+        value = _fit_text(value, max_width, font_name, fitted_size)
     c.saveState()
     c.setFillColor(colors.black)
-    c.setFont(font_name, size)
+    c.setFont(font_name, fitted_size)
     if align == "right":
         c.drawRightString(x + max_width, y, value)
     else:
@@ -234,16 +239,15 @@ def _jobcenter_pdf(data: dict) -> bytes:
     _draw_field(c, left, 700, col_width, "Straße", data["landlord_street"])
     _draw_field(c, left, 673, 78, "PLZ", data.get("landlord_zip", ""))
     _draw_field(c, left + 92, 673, col_width - 92, "Ort", data.get("landlord_city", ""))
-    _draw_field(c, left, 646, 78, "Telefon", data.get("landlord_phone", ""))
-    _draw_field(c, left + 92, 646, 74, "Telefax", data.get("landlord_fax", ""))
-    _draw_field(c, left + 180, 646, col_width - 180, "E-Mail", data.get("landlord_email", ""))
+    _draw_field(c, left, 646, 74, "Telefon", data.get("landlord_phone", ""))
+    _draw_field(c, left + 88, 646, col_width - 88, "E-Mail", data.get("landlord_email", ""), size=8)
 
     _draw_section_title(c, left2, 754, "Mieter")
     _draw_field(c, left2, 727, col_width, "Name, Vorname", data["tenant_name"])
     _draw_jobcenter_checkbox(c, left2, 698, "Hauptmieter", not data.get("is_sublease"))
     _draw_jobcenter_checkbox(c, left2 + 118, 698, "Untermieter", data.get("is_sublease"))
-    _draw_field(c, left2, 673, 60, "Anzahl", data.get("tenant_count", ""))
-    _draw_field(c, left2 + 74, 673, col_width - 74, "Telefon / E-Mail", data.get("tenant_contact", ""), size=8)
+    _draw_field(c, left2, 673, 46, "Anzahl", data.get("tenant_count", ""))
+    _draw_field(c, left2 + 60, 673, col_width - 60, "Telefon / E-Mail", data.get("tenant_contact", ""), size=8)
     _draw_field(c, left2, 646, col_width, "Einzug am", _date(data["lease_start"]))
 
     _draw_section_title(c, left, 610, "Mietobjekt")

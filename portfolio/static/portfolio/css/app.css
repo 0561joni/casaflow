@@ -957,6 +957,26 @@ select, input, textarea {
   cursor: not-allowed;
   opacity: 0.55;
 }
+.download-feedback {
+  margin-top: 12px;
+  border-radius: 6px;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+.download-feedback.success {
+  border-color: #86efac;
+  background: #f0fdf4;
+  color: #166534;
+}
+.download-feedback.error {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
 .input-action {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

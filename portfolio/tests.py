@@ -1850,7 +1850,10 @@ class FinanceCalculationTests(TestCase):
             for template in ("jobcenter", "stadt_kassel"):
                 response = self.client.post(reverse("unit_mietbescheinigung", kwargs={"pk": self.unit.pk}), {**post_data, "template": template})
 
-                self.assertRedirects(response, reverse("unit_detail", kwargs={"pk": self.unit.pk}))
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response["Content-Type"], "application/pdf")
+                self.assertIn("attachment;", response["Content-Disposition"])
+                self.assertTrue(response.content.startswith(b"%PDF"))
                 export = ReportExport.objects.get(export_type="mietbescheinigung_pdf", file_name__contains=template)
                 path = Path(media_root) / "exports" / export.file_name
                 self.assertTrue(path.exists())
