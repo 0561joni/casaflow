@@ -19,6 +19,7 @@ from django.urls import reverse, reverse_lazy
 from django.utils.safestring import mark_safe
 from django.utils.text import slugify
 from django.views.generic import CreateView, ListView, UpdateView
+from pypdf.errors import PdfReadError
 
 from .exports import (
     bank_financing_preview,
@@ -870,21 +871,26 @@ def unit_mietbescheinigung(request, pk):
                         pdf_data["signature_bytes"] = signature_upload.read()
                     elif selected_landlord and selected_landlord.signature_image:
                         pdf_data["signature_path"] = selected_landlord.signature_image.path
-                pdf_bytes = mietbescheinigung_pdf(cleaned["template"], pdf_data)
-                unit_slug = slugify(f"{unit.property.name}-{unit.label}") or f"unit-{unit.pk}"
-                file_name = f"mietbescheinigung-{cleaned['template']}-{unit_slug}-{date.today().isoformat()}.pdf"
-                _save_export_file(pdf_bytes, file_name)
-                ReportExport.objects.update_or_create(
-                    export_type="mietbescheinigung_pdf",
-                    file_name=file_name,
-                    defaults={
-                        "title": f"Mietbescheinigung {unit.label}",
-                        "property": unit.property,
-                    },
-                )
-                response = HttpResponse(pdf_bytes, content_type="application/pdf")
-                response["Content-Disposition"] = f'attachment; filename="{file_name}"'
-                return response
+                try:
+                    pdf_bytes = mietbescheinigung_pdf(cleaned["template"], pdf_data)
+                except (FileNotFoundError, PdfReadError, OSError):
+                    form.add_error(None, "PDF generation failed because the selected template file could not be loaded.")
+                    messages.error(request, "Generation failed. The selected PDF template could not be loaded.")
+                else:
+                    unit_slug = slugify(f"{unit.property.name}-{unit.label}") or f"unit-{unit.pk}"
+                    file_name = f"mietbescheinigung-{cleaned['template']}-{unit_slug}-{date.today().isoformat()}.pdf"
+                    _save_export_file(pdf_bytes, file_name)
+                    ReportExport.objects.update_or_create(
+                        export_type="mietbescheinigung_pdf",
+                        file_name=file_name,
+                        defaults={
+                            "title": f"Mietbescheinigung {unit.label}",
+                            "property": unit.property,
+                        },
+                    )
+                    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+                    response["Content-Disposition"] = f'attachment; filename="{file_name}"'
+                    return response
         else:
             messages.error(request, "Generation failed. Please check the highlighted fields.")
     else:

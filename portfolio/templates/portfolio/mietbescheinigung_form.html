@@ -11,7 +11,7 @@
   </div>
 </div>
 
-<form method="post" enctype="multipart/form-data" class="form panel mietbescheinigung-form">
+<form method="post" action="{% url 'unit_mietbescheinigung' unit.pk %}" enctype="multipart/form-data" class="form panel mietbescheinigung-form">
   {% csrf_token %}
   {% if form.non_field_errors %}<div class="error-summary">{{ form.non_field_errors }}</div>{% endif %}
   {% if source_warnings %}
@@ -160,10 +160,14 @@
       try {
         const formData = new FormData(mietbescheinigungForm);
         formData.set("action", "generate");
-        const response = await fetch(mietbescheinigungForm.action || window.location.href, {
+        const response = await fetch(mietbescheinigungForm.action, {
           method: "POST",
           body: formData,
-          headers: { "X-Requested-With": "XMLHttpRequest" },
+          credentials: "same-origin",
+          headers: {
+            "Accept": "application/pdf, text/html",
+            "X-Requested-With": "XMLHttpRequest",
+          },
         });
         const contentType = response.headers.get("Content-Type") || "";
         if (response.ok && contentType.includes("application/pdf")) {
@@ -172,11 +176,16 @@
           const link = document.createElement("a");
           link.href = url;
           link.download = downloadFileName(response);
+          link.style.display = "none";
           document.body.appendChild(link);
           link.click();
-          link.remove();
-          URL.revokeObjectURL(url);
+          window.setTimeout(() => {
+            URL.revokeObjectURL(url);
+            link.remove();
+          }, 60000);
           setDownloadFeedback("PDF created and download started. It is also saved in Recent Exports.", "success");
+        } else if (!response.ok) {
+          setDownloadFeedback(`PDF creation failed. The server returned ${response.status}. Please reload the form and try again.`, "error");
         } else {
           const html = await response.text();
           document.open();

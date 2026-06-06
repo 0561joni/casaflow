@@ -1790,6 +1790,9 @@ class FinanceCalculationTests(TestCase):
         response = self.client.get(reverse("unit_mietbescheinigung", kwargs={"pk": self.unit.pk}), {"template": "stadt_kassel", "landlord": landlord.pk})
 
         self.assertContains(response, "Create Mietbescheinigung")
+        self.assertContains(response, f'action="{reverse("unit_mietbescheinigung", kwargs={"pk": self.unit.pk})}"')
+        self.assertContains(response, "URL.revokeObjectURL(url);")
+        self.assertContains(response, "60000")
         self.assertContains(response, "New landlord")
         self.assertContains(response, "Casa Owner")
         self.assertContains(response, "Test Street 1")
